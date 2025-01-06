@@ -12,6 +12,8 @@ from dataclasses import dataclass
 
 from functions import functions, handle_function_call
 from fancy import format_text, RESET_GENERIC
+import fallbacks
+import model_quirks
 
 app_name = "parrotflume"
 
@@ -45,11 +47,11 @@ def load_config(file_path):
 
 def create_completion_response(config, messages, add_functions=True):
     # Ugly quirk for openAI o1-preview* model: Does not know system messages
-    if config.model.startswith("o1-preview"):
+    if any(config.model.startswith(prefix) for prefix in model_quirks.no_system):
         if messages[0]["role"] == "system":
             messages[0]["role"] = "user"
     # Ugly quirk for openAI o* (non-preview) models: system has been renamed to developer
-    elif config.model.startswith("o1") or config.model.startswith("o3"):
+    elif any(config.model.startswith(prefix) for prefix in model_quirks.no_system):
         if messages[0]["role"] == "system":
             messages[0]["role"] = "developer"
     else:
@@ -58,7 +60,7 @@ def create_completion_response(config, messages, add_functions=True):
 
     # Ugly quirk for openAI o1-preview* model: Does not know function calls
     # Ugly quirk for deepseek-* model: Uses tools instead of functions
-    if config.model.startswith("o1-preview") or config.model.startswith("deepseek-"):
+    if any(config.model.startswith(prefix) for prefix in model_quirks.no_function_call + model_quirks.tool_call):
         messages = [message for message in messages if message["role"] != "function"]
 
     params = {
@@ -66,16 +68,19 @@ def create_completion_response(config, messages, add_functions=True):
         "messages": messages,
     }
 
-    # Ugly quirks for openAI o* models: New parameter for max_tokens, no temperature
-    if config.model.startswith("o1") or config.model.startswith("o3"):
+    # Ugly quirk for openAI o* models: New parameter for max_tokens, no temperature
+    if any(config.model.startswith(prefix) for prefix in model_quirks.max_completion_tokens):
         params["max_completion_tokens"] = config.max_tokens
     else:
         params["max_tokens"] = config.max_tokens
+
+    # Ugly quirk for openAI o* models: No temperature
+    if not any(config.model.startswith(prefix) for prefix in model_quirks.no_temperature):
         params["temperature"] = config.temperature
 
     # Ugly quirk for openAI o1-preview* model: Does not know function calls
     # Ugly quirk for deepseek-* model: Uses tools instead of functions
-    if add_functions and config.func and not config.model.startswith("o1-preview") and not config.model.startswith("deepseek-"):
+    if add_functions and config.func and not any(config.model.startswith(prefix) for prefix in model_quirks.no_function_call + model_quirks.tool_call):
         params["functions"] = functions
         params["function_call"] = "auto"
 
@@ -465,13 +470,8 @@ def setup_config_file_base_url(config, config_file_data):
                 break
     if not config.base_url:
         # fallback guesswork attempts
-        if config.api_provider in ("openai", "deepseek", "llama.cpp"):
-            if config.api_provider == "openai":
-                config.base_url = "https://api.openai.com/v1/"
-            elif config.api_provider == "deepseek":
-                config.base_url = "https://api.deepseek.com/v1/"
-            elif config.api_provider == "llama.cpp":
-                config.base_url = "http://localhost:8080/v1/"
+        if config.api_provider in fallbacks.base_urls:
+            config.base_url = fallbacks.base_urls[config.api_provider]
             print(f"base-url not configured, trying {config.base_url} for {config.api_provider}", file=sys.stderr)
 
 
@@ -485,8 +485,8 @@ def setup_config_file_api_key(config, config_file_data):
                 break
     if not config.api_key:
         # fallback guesswork attempts
-        if config.api_provider == "llama.cpp":
-            config.api_key = "sk-no-key-required"
+        if config.api_provider in fallbacks.api_keys:
+            config.api_key = fallbacks.api_keys[config.api_provider]
             print(f"api_key not configured, trying {config.api_key} for {config.api_provider}", file=sys.stderr)
 
 
@@ -500,13 +500,8 @@ def setup_config_file_model(config, config_file_data):
                 break
     if config.model is None:
         # fallback guesswork attempts
-        if config.api_provider in ("openai", "deepseek", "llama.cpp"):
-            if config.api_provider == "openai":
-                config.model = "gpt-4o"
-            elif config.api_provider == "deepseek":
-                config.model = "deepseek-chat"
-            elif config.api_provider == "llama.cpp":
-                config.model = ""
+        if config.api_provider in fallbacks.models:
+            config.model = fallbacks.models[config.api_provider]
             print(f"model not configured, trying {config.model if config.model else "\"\""} for {config.api_provider}", file=sys.stderr)
 
 
