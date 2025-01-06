@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "parrotflume"
+description = "ParrotFlume is a Python project for interacting with OpenAI-like APIs, performing mathematical operations, and providing a CLI for chat and file transformations."
+authors = [
+    { name = "Sebastian Dalfuß", email = "py@sedf.de" },
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.0.0",
+    "sympy>=1.12",
+    "pylatexenc>=2.10",
+    "appdirs>=1.4.4",
+]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+Homepage = "https://github.com/iehgit/parrotflume"
+Repository = "https://github.com/iehgit/parrotflume"
+Issues = "https://github.com/yourusername/iehgit/issues"
+
+[project.scripts]
+parrotflume = "parrotflume.__main__:main"
+
+[tool.hatch.version]
+path = "src/parrotflume/__init__.py"

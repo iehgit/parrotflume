@@ -1,0 +1,28 @@
+# Example TOML configuration file for parrotflume
+
+[global_options]
+temperature = 0.1  # Default temperature for the model
+max_tokens = 4096  # Maximum number of tokens to generate
+markdown = true    # Enable markdown rendering
+color = true       # Enable colored output
+latex = true       # Enable LaTeX replacement
+func = true        # Enable function calling
+
+# API providers
+[[api_providers]]
+name = "openai"
+base_url = "https://api.openai.com/v1/"
+api_key = "<yourapikeyhere>"
+model = "gpt-4o"
+
+[[api_providers]]
+name = "deepseek"
+base_url = "https://api.deepseek.com/v1/"
+api_key = "<yourapikeyhere>"
+model = "deepseek-chat"
+
+[[api_providers]]
+name = "llama.cpp"
+base_url = "http://localhost:8080/v1/"
+api_key = "sk-no-key-required"  # not used, NOT allowed to be empty for llama.cpp
+model = ""   # not used, allowed to be empty for llama.cpp
