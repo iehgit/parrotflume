@@ -1,4 +1,4 @@
-openai>=1.0.0
+openai>=1.55.0
 pylatexenc>=2.10
 appdirs>=1.4.4
-sympy>=1.12
+sympy>=1.12.1
