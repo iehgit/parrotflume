@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 # noinspection PyUnresolvedReferences
 import readline  # used by input()
@@ -269,7 +270,7 @@ def run_chat(config):
             try:
                 with open(file_path, "w") as f:
                     for message in messages:
-                        f.write(f"{message['role']}: {message['content']}\n")
+                        f.write(f"{json.dumps(message)}\n")
                 print(f"[Chat history saved to {file_path}]")
             except OSError as e:
                 print(f"[Error saving chat history: {e}]")
@@ -359,12 +360,15 @@ def run_chat(config):
             file_path = user_input.strip()[3:].lstrip()
             try:
                 with open(file_path, "r") as f:
-                    # Read the file and parse the chat history
+                    # Read the file and parse each line as a JSON object
                     new_messages = []
                     for line in f:
-                        if ": " in line:
-                            role, content = line.split(": ", 1)
-                            new_messages.append({"role": role.strip(), "content": content.strip()})
+                        try:
+                            message = json.loads(line.strip())
+                            new_messages.append(message)
+                        except json.JSONDecodeError as e:
+                            print(f"[Error decoding JSON line: {e}]")
+                            continue
 
                     # Replace the current chat history with the loaded messages
                     if new_messages:
