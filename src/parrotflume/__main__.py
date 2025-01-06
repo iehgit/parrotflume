@@ -181,6 +181,53 @@ def get_multiline_input():
         print()
     return "\n".join(lines)
 
+def path_completer(text, state):
+    """
+    Auto-completion function for file paths.
+    """
+    line = readline.get_line_buffer()
+
+    # Check if the input starts with a file command
+    if not any(line.startswith(f"/{cmd} ") for cmd in ("c", "d", "f", "u")):
+        return None
+
+    # Expand ~ to the user's home directory
+    if '~' in text:
+        text = os.path.expanduser(text)
+
+    # Get the directory and prefix
+    directory, prefix = os.path.split(text)
+
+    # If no directory is specified, use the current directory
+    if not directory:
+        directory = '.'
+
+    # Get all files and directories in the specified directory
+    try:
+        files = os.listdir(directory)
+    except OSError:
+        return None
+
+    # Filter files that match the prefix
+    matches = [f for f in files if f.startswith(prefix)]
+
+    # Add the directory back to the matches
+    matches = [os.path.join(directory, f) for f in matches]
+
+    # Return the match corresponding to the state
+    if state < len(matches):
+        return matches[state]
+    else:
+        return None
+
+
+def setup_auto_completion():
+    """
+    Set up auto-completion for file paths.
+    """
+    readline.set_completer(path_completer)
+    readline.parse_and_bind("tab: complete")
+    readline.set_completer_delims(' \t\n')  # Treat spaces and tabs as delimiters
 
 def run_chat(config):
     system_message = (
@@ -191,6 +238,8 @@ def run_chat(config):
     )
 
     messages = [{"role": "system", "content": system_message}]
+
+    setup_auto_completion()
 
     print("[Entering chat mode. /q to quit, /r to reset, /b for multiline buffer, /h for help]")
     while True:
