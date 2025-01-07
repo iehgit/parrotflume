@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from functions import functions, handle_function_call
-from fancy import format_text, RESET_GENERIC
+from fancy import print_fancy, print_reset
 import fallbacks
 import model_quirks
 
@@ -102,11 +102,6 @@ def create_completion_response(config, messages, add_functions=True):
                 time.sleep(retry ** 2)
 
 
-def print_fancy(config, output):
-    output = format_text(output, config.markdown, config.latex, config.color)
-    print(output)
-
-
 def run_oneshot(config):
     system_message = (
         "You are an assistant providing a direct answer based on the user's input. "
@@ -127,7 +122,7 @@ def run_oneshot(config):
         response = create_completion_response(config, messages, False)
 
     output = response.choices[0].message.content
-    print_fancy(config, output)
+    print_fancy(output, config.markdown, config.latex, config.color)
 
     sys.exit(0)
 
@@ -292,7 +287,7 @@ def run_chat(config):
         "You are an assistant. "
         "You will hold a conversation with the user. "
         "Respond clearly and concisely to each user message. "
-        "Avoid open ended closing statements."
+        "Avoid continuation prompts and other open ended closing statements."
     )
 
     messages = [{"role": "system", "content": system_message}]
@@ -494,7 +489,7 @@ def run_chat(config):
             user_input = get_multiline_input()
 
         elif user_input.strip() == "/0":
-            print(RESET_GENERIC, end="")
+            print_reset()
             continue
 
         messages.append({"role": "user", "content": user_input})
@@ -508,7 +503,7 @@ def run_chat(config):
 
         output = response.choices[0].message.content
         messages.append({"role": "assistant", "content": output})
-        print_fancy(config, output)
+        print_fancy(output, config.markdown, config.latex, config.color)
 
     print("\n[Exiting chat mode]")
     sys.exit(0)

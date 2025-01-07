@@ -21,7 +21,7 @@ RESET_YELLOW_FG = "\033[39m"
 RESET_GENERIC = "\033[0m"
 
 
-def format_text(text, do_markdown, do_latex, do_color):
+def print_fancy(text, do_markdown, do_latex, do_color):
     """
     Processes the given text with Markdown, LaTeX, and color formatting.
     Supports h3, h4, italic (*), bold (**), code blocks, inline code, and LaTeX to Unicode conversion.
@@ -78,4 +78,8 @@ def format_text(text, do_markdown, do_latex, do_color):
 
         result.append(line + "\n")
 
-    return "".join(result)
+    print("".join(result), end=None)
+
+
+def print_reset():
+    print(RESET_GENERIC, end=None)
