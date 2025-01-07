@@ -116,6 +116,9 @@ def run_oneshot(config):
     ]
 
     response = create_completion_response(config, messages)
+    if not response:
+        sys.exit(1)
+
     while response.choices[0].finish_reason == "function_call":
         function_call = response.choices[0].message.function_call
         handle_function_call(messages, function_call)
@@ -142,6 +145,8 @@ def run_transform(config, file_content):
     ]
 
     response = create_completion_response(config, messages)
+    if not response:
+        sys.exit(1)
     output = response.choices[0].message.content
 
     # normalize trailing newlines
@@ -164,6 +169,8 @@ def run_perform(config, file_content):
     ]
 
     response = create_completion_response(config, messages)
+    if not response:
+        sys.exit(1)
     output = response.choices[0].message.content
 
     sys.stdout.write(output)
@@ -495,6 +502,8 @@ def run_chat(config):
         messages.append({"role": "user", "content": user_input})
 
         response = create_completion_response(config, messages)
+        if not response:
+            continue
         while response.choices[0].finish_reason == "function_call":
             function_call = response.choices[0].message.function_call
             print(f"[{function_call.name} called]")
