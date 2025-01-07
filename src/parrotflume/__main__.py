@@ -9,6 +9,7 @@ import tomllib
 import openai
 from appdirs import user_config_dir
 from dataclasses import dataclass
+from functools import lru_cache
 
 from functions import functions, handle_function_call
 from fancy import format_text, RESET_GENERIC
@@ -186,11 +187,63 @@ def get_multiline_input():
         print()
     return "\n".join(lines)
 
-def path_completer(text, state):
+@lru_cache
+def get_api_providers():
+    """Extract API provider names from the config file."""
+    config_dir = user_config_dir(appname=app_name)
+    config_path = os.path.join(config_dir, f"{app_name}.config.toml")
+    config_file_data = load_config(config_path)
+    if config_file_data and "api_providers" in config_file_data:
+        return [provider["name"] for provider in config_file_data["api_providers"]]
+    return []
+
+@lru_cache
+def get_models(_):
+    try:
+        return [model.id for model in openai.models.list()]
+    except Exception:
+        return None
+
+def auto_completer(text, state):
     """
     Auto-completion function for file paths.
     """
     line = readline.get_line_buffer()
+
+    # Handle API provider completion for "/p " commands
+    if line.startswith("/p "):
+        # Extract the prefix after "/p "
+        prefix = line[3:].lstrip()
+
+        # Get API providers from the config file
+        api_providers = get_api_providers()
+
+        # Filter providers that match the prefix
+        matches = [provider for provider in api_providers if provider.startswith(prefix)]
+
+        # Return the match corresponding to the state
+        if state < len(matches):
+            return matches[state]
+        else:
+            return None
+
+    # Handle model completion for "/m " commands
+    elif line.startswith("/m "):
+        # Extract the prefix after "/m "
+        prefix = line[3:].lstrip()
+
+        # Get available models from the OpenAI API
+        model_ids = get_models(openai.base_url)
+
+        # Filter models that match the prefix
+        matches = [model for model in model_ids if model.startswith(prefix)]
+
+        # Return the match corresponding to the state
+        if state < len(matches):
+            return matches[state]
+        else:
+            return None
+
 
     # Check if the input starts with a file command
     if not any(line.startswith(f"/{cmd} ") for cmd in ("c", "d", "f", "u")):
@@ -230,7 +283,7 @@ def setup_auto_completion():
     """
     Set up auto-completion for file paths.
     """
-    readline.set_completer(path_completer)
+    readline.set_completer(auto_completer)
     readline.parse_and_bind("tab: complete")
     readline.set_completer_delims(' \t\n')  # Treat spaces and tabs as delimiters
 
@@ -337,9 +390,10 @@ def run_chat(config):
                     file_content = f.read()
                 user_input = file_content
                 print(f"[File content loaded from {file_path}]")
+                messages.append({"role": "user", "content": user_input})
             except OSError as e:
                 print(f"[Error loading file: {e}]")
-                continue
+            continue
 
         elif user_input.strip() == "/l":
             try:
