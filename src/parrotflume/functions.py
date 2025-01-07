@@ -1,4 +1,5 @@
 import json
+import re
 from ast import literal_eval
 from datetime import datetime
 from sympy import simplify, solve, sympify, Eq, integrate, diff
@@ -98,7 +99,25 @@ functions = [
             },
             "required": ["expression", "variable"]
         }
-    }
+    },
+    {
+        "name": "regex_match",
+        "description": "Applies a regex pattern to a text and returns the matches.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "pattern": {
+                    "type": "string",
+                    "description": "The regex pattern to apply."
+                },
+                "text": {
+                    "type": "string",
+                    "description": "The text to search within."
+                }
+            },
+            "required": ["pattern", "text"]
+        }
+}
 ]
 
 
@@ -168,6 +187,17 @@ def handle_sympy_differentiate(messages, arguments):
         messages.append({"role": "function", "name": "sympy_differentiate", "content": str(e)})
 
 
+def handle_regex_match(messages, arguments):
+    try:
+        pattern = arguments["pattern"]
+        text = arguments["text"]
+
+        result = re.findall(pattern, text)
+        messages.append({"role": "function", "name": "regex_match", "content": str(result)})
+    except Exception as e:
+        messages.append({"role": "function", "name": "regex_match", "content": str(e)})
+
+
 def handle_function_call(messages, function_call):
     args = json.loads(function_call.arguments)
 
@@ -183,3 +213,5 @@ def handle_function_call(messages, function_call):
         handle_sympy_integrate(messages, args)
     elif function_call.name == "sympy_differentiate":
         handle_sympy_differentiate(messages, args)
+    elif function_call.name == "regex_match":
+        handle_regex_match(messages, args)
