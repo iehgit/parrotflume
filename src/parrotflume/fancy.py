@@ -31,7 +31,7 @@ def print_fancy(text, do_markdown, do_latex, do_color):
 
     for line in text.splitlines():
         # Handle code blocks
-        if line.startswith("\x60\x60\x60"):
+        if line.lstrip().startswith("\x60\x60\x60"):
             if not in_code_block:
                 in_code_block = True
                 result.append(FAINT + line[3:] + RESET_FAINT + GREY_BG + "\n")
