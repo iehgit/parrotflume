@@ -67,7 +67,7 @@ def format_text(text, do_markdown, do_latex, do_color):
                 except IndexError:
                     pass  # ignore
 
-            if do_latex:
+            if do_latex and not re.search(r"`.*?`", line):
                 # Convert LaTeX to Unicode
                 latex2text = LatexNodes2Text(keep_comments=True)
                 line = latex2text.latex_to_text(line, tolerant_parsing=True)
