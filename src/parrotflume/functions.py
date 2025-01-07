@@ -123,7 +123,7 @@ functions = [
 
 def handle_literal_eval(messages, arguments):
     try:
-        result = literal_eval(arguments["expression"])
+        result = literal_eval(arguments)
         messages.append({"role": "function", "name": "literal_eval", "content": str(result)})
     except (ValueError, SyntaxError) as e:
         messages.append({"role": "function", "name": "literal_eval", "content": str(e)})
@@ -202,7 +202,7 @@ def handle_function_call(messages, function_call):
     args = json.loads(function_call.arguments)
 
     if function_call.name == "literal_eval":
-        handle_literal_eval(messages, args)
+        handle_literal_eval(messages, function_call.arguments)
     elif function_call.name == "get_current_date":
         handle_get_current_date(messages)
     elif function_call.name == "sympy_simplify":
