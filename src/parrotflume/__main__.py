@@ -17,7 +17,8 @@ import fallbacks
 import model_quirks
 
 app_name = "parrotflume"
-
+config_dir = user_config_dir(appname=app_name)
+config_path = os.path.join(config_dir, f"{app_name}.config.toml")
 
 @dataclass
 class Config:
@@ -40,6 +41,10 @@ def load_config(file_path):
             config_data = tomllib.load(f)
             return config_data
     except FileNotFoundError:
+        try:
+            os.makedirs(config_dir, exist_ok=True)
+        except OSError:
+            pass  # ignore
         return None
     except tomllib.TOMLDecodeError as e:
         print(f"Error parsing TOML config file: {e}", file=sys.stderr)
@@ -192,8 +197,6 @@ def get_multiline_input():
 
 def get_api_providers():
     """Extract API provider names from the config file."""
-    config_dir = user_config_dir(appname=app_name)
-    config_path = os.path.join(config_dir, f"{app_name}.config.toml")
     config_file_data = load_config(config_path)
     if config_file_data and "api_providers" in config_file_data:
         return [provider["name"] for provider in config_file_data["api_providers"]]
@@ -330,8 +333,6 @@ def run_chat(config):
             old_config = config
             new_provider = user_input.strip()[3:].lstrip()
             config.api_provider = new_provider
-            config_dir = user_config_dir(appname=app_name)
-            config_path = os.path.join(config_dir, f"{app_name}.config.toml")
             config_file_data = load_config(config_path)
             setup_config_file_base_url(config, config_file_data)
             if not config.base_url:
@@ -478,13 +479,6 @@ def setup_config_file_model(config, config_file_data):
 def main():
     config = Config()
 
-    config_dir = user_config_dir(appname=app_name)
-    try:
-        os.makedirs(config_dir, exist_ok=True)
-    except OSError:
-        pass  # ignore
-    config_path = os.path.join(config_dir, f"{app_name}.config.toml")
-
     help_description = f"{app_name}: Process file content or chat with an OpenAI compatible API."
 
     help_epilog = (
@@ -505,7 +499,7 @@ def main():
     mode_group.add_argument("-p", "--perform", metavar="<prompt>", help="Perform task on data with the given prompt.")
     mode_group.add_argument("-l", "--list", action="store_true", help="List available models.")
 
-    parser.add_argument("-a", "--api-provider", metavar="<provider>", help="Set API provider.")
+    parser.add_argument("-a", "--api-provider", metavar="<provider>", help="Set API provider (default: first in config file).")
     parser.add_argument("-b", "--base-url", metavar="<url>", help="Set API base URL.")
     parser.add_argument("-k", "--key", metavar="<key>", help="Set API key.")
     parser.add_argument("-m", "--model", metavar="<model>", help="Set model.")
