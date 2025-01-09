@@ -9,10 +9,10 @@ import tomllib
 import openai
 from appdirs import user_config_dir
 from dataclasses import dataclass
-from functools import lru_cache
 
 from functions import functions, handle_function_call
 from fancy import print_fancy, print_reset
+from auto_completer import AutoCompleter
 import fallbacks
 import model_quirks
 
@@ -189,7 +189,7 @@ def get_multiline_input():
         print()
     return "\n".join(lines)
 
-@lru_cache
+
 def get_api_providers():
     """Extract API provider names from the config file."""
     config_dir = user_config_dir(appname=app_name)
@@ -199,95 +199,6 @@ def get_api_providers():
         return [provider["name"] for provider in config_file_data["api_providers"]]
     return []
 
-@lru_cache
-def get_models(_):
-    try:
-        return [model.id for model in openai.models.list()]
-    except Exception:
-        return None
-
-def auto_completer(text, state):
-    """
-    Auto-completion function for file paths.
-    """
-    line = readline.get_line_buffer()
-
-    # Handle API provider completion for "/p " commands
-    if line.startswith("/p "):
-        # Extract the prefix after "/p "
-        prefix = line[3:].lstrip()
-
-        # Get API providers from the config file
-        api_providers = get_api_providers()
-
-        # Filter providers that match the prefix
-        matches = [provider for provider in api_providers if provider.startswith(prefix)]
-
-        # Return the match corresponding to the state
-        if state < len(matches):
-            return matches[state]
-        else:
-            return None
-
-    # Handle model completion for "/m " commands
-    elif line.startswith("/m "):
-        # Extract the prefix after "/m "
-        prefix = line[3:].lstrip()
-
-        # Get available models from the OpenAI API
-        model_ids = get_models(openai.base_url)
-
-        # Filter models that match the prefix
-        matches = [model for model in model_ids if model.startswith(prefix)]
-
-        # Return the match corresponding to the state
-        if state < len(matches):
-            return matches[state]
-        else:
-            return None
-
-
-    # Check if the input starts with a file command
-    if not any(line.startswith(f"/{cmd} ") for cmd in ("c", "d", "f", "u")):
-        return None
-
-    # Expand ~ to the user's home directory
-    if '~' in text:
-        text = os.path.expanduser(text)
-
-    # Get the directory and prefix
-    directory, prefix = os.path.split(text)
-
-    # If no directory is specified, use the current directory
-    if not directory:
-        directory = '.'
-
-    # Get all files and directories in the specified directory
-    try:
-        files = os.listdir(directory)
-    except OSError:
-        return None
-
-    # Filter files that match the prefix
-    matches = [f for f in files if f.startswith(prefix)]
-
-    # Add the directory back to the matches
-    matches = [os.path.join(directory, f) for f in matches]
-
-    # Return the match corresponding to the state
-    if state < len(matches):
-        return matches[state]
-    else:
-        return None
-
-
-def setup_auto_completion():
-    """
-    Set up auto-completion for file paths.
-    """
-    readline.set_completer(auto_completer)
-    readline.parse_and_bind("tab: complete")
-    readline.set_completer_delims(' \t\n')  # Treat spaces and tabs as delimiters
 
 def run_chat(config):
     system_message = (
@@ -299,7 +210,8 @@ def run_chat(config):
 
     messages = [{"role": "system", "content": system_message}]
 
-    setup_auto_completion()
+    auto_completer = AutoCompleter(get_api_providers())
+    auto_completer.setup()  # alters global state of readline
 
     print("[Entering chat mode. /q to quit, /r to reset, /b for multiline buffer, /h for help]")
     while True:
