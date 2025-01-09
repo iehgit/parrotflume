@@ -1,5 +1,26 @@
 import re
-from pylatexenc.latex2text import LatexNodes2Text
+
+from pylatexenc import latexwalker, latex2text
+from pylatexenc.macrospec import MacroSpec
+
+#  Overwrite sqrt macros from pylatexenc, the original renders n-th roots as square roots
+lw_context_db = latexwalker.get_default_latex_context_db()
+lw_context_db.add_context_category(
+    'roots',
+    prepend=True,
+    macros=[
+        MacroSpec('sqrt', '[{')
+    ],
+)
+
+l2t_context_db = latex2text.get_default_latex_context_db()
+l2t_context_db.add_context_category(
+    'roots',
+    prepend=True,
+    macros=[
+        latex2text.MacroTextSpec("sqrt", simplify_repl="%(1)s√(%(2)s)"),
+    ],
+)
 
 # ANSI escape codes
 BOLD = "\033[1m"
@@ -32,6 +53,7 @@ def print_fancy(text, do_markdown, do_latex, do_color):
     for line in text.splitlines():
         # Handle code blocks
         if line.lstrip().startswith("\x60\x60\x60"):
+            line = line.lstrip()
             if not in_code_block:
                 in_code_block = True
                 result.append(FAINT + line[3:] + RESET_FAINT + GREY_BG + "\n")
@@ -69,8 +91,7 @@ def print_fancy(text, do_markdown, do_latex, do_color):
 
             if do_latex and not re.search(r"`.*?`", line):
                 # Convert LaTeX to Unicode
-                latex2text = LatexNodes2Text(keep_comments=True)
-                line = latex2text.latex_to_text(line, tolerant_parsing=True)
+                line = custom_latex_to_text(line)
 
             if do_color:
                 # Apply yellow foreground color
@@ -83,3 +104,14 @@ def print_fancy(text, do_markdown, do_latex, do_color):
 
 def print_reset():
     print(RESET_GENERIC, end=None)
+
+
+def custom_latex_to_text(input_latex):
+    # the latex parser instance with custom latex_context
+    lw_obj = latexwalker.LatexWalker(input_latex, latex_context=lw_context_db, tolerant_parsing=True)
+    # parse to node list
+    nodelist, pos, length = lw_obj.get_latex_nodes()
+    # initialize the converter to text with custom latex_context
+    l2t_obj = latex2text.LatexNodes2Text(latex_context=l2t_context_db, keep_comments=True)
+    # convert to text
+    return l2t_obj.nodelist_to_text(nodelist)
