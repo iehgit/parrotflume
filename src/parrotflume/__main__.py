@@ -433,6 +433,10 @@ def run_chat(config):
             print_reset()
             continue
 
+        elif user_input.strip() == "/\u0065\u0067\u0067":
+            user_input = "\U0001F95A"
+            print(user_input)
+
         messages.append({"role": "user", "content": user_input})
 
         response = create_completion_response(config, messages)
@@ -499,11 +503,12 @@ def setup_config_file_model(config, config_file_data):
 def main():
     config = Config()
 
-    help_description = f"{app_name}: Process file content or chat with an OpenAI compatible API."
+    help_description = f"{app_name}: Process data from a pipe or file with an OpenAI-compatible API, or chat with it."
 
     help_epilog = (
         "environment variables:\n"
-        "    OPENAI_API_KEY=<key>\n\n"
+        "    OPENAI_API_KEY=<key>\n"
+        "    OPENAI_BASE_URL=<url>\n\n"
         "configuration file location:\n"
         f"    {config_path}\n\n"
         "configuration precedence (descending):\n"
