@@ -1,12 +1,13 @@
 # Example TOML configuration file for parrotflume
 
 [global_options]
-temperature = 0.1  # Default temperature for the model
-max_tokens = 4096  # Maximum number of tokens to generate
-markdown = true    # Enable markdown rendering
-color = true       # Enable colored output
-latex = true       # Enable LaTeX replacement
-func = true        # Enable function calling
+temperature = 0.1     # Default temperature for the model
+max_tokens = 4096     # Maximum number of tokens to generate
+markdown = true       # Enable markdown rendering
+latex = true          # Enable LaTeX replacement
+color = true          # Enable colored output
+color_name = "green"  # ANSI name for colored output
+func = true           # Enable function calling
 
 # API providers
 [[api_providers]]

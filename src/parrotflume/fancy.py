@@ -3,13 +3,13 @@ import re
 from pylatexenc import latexwalker, latex2text
 from pylatexenc.macrospec import MacroSpec
 
-#  Overwrite sqrt macros from pylatexenc, the original renders n-th roots as square roots
+#  Overwrite sqrt macros from pylatexenc, the original wrongly renders n-th roots as square roots
 lw_context_db = latexwalker.get_default_latex_context_db()
 lw_context_db.add_context_category(
     'roots',
     prepend=True,
     macros=[
-        MacroSpec('sqrt', '[{')
+        MacroSpec("sqrt", "[{")
     ],
 )
 
@@ -29,7 +29,6 @@ INVERT = "\033[7m"  # Inversion for h3 headers
 UNDERLINE = "\033[4m"  # Underline for h4 headers
 GREY_BG = "\033[100m"  # Grey background for code blocks
 FAINT = "\033[2m"  # Dim for code block headers
-YELLOW_FG = "\033[93m"
 
 RESET_BOLD = "\033[22m"
 RESET_ITALIC = "\033[23m"
@@ -37,12 +36,31 @@ RESET_INVERT = "\033[27m"
 RESET_UNDERLINE = "\033[24m"
 RESET_GREY_BG = "\033[49m"
 RESET_FAINT = "\033[22m"
-RESET_YELLOW_FG = "\033[39m"
 
+RESET_FG = "\033[39m"
 RESET_GENERIC = "\033[0m"
 
+fg_color_map = {
+    "black": "\033[30m",
+    "red": "\033[31m",
+    "green": "\033[32m",
+    "yellow": "\033[33m",
+    "blue": "\033[34m",
+    "magenta": "\033[35m",
+    "cyan": "\033[36m",
+    "white": "\033[37m",
+    "bright_black": "\033[1;30m",
+    "bright_red": "\033[1;31m",
+    "bright_green": "\033[1;32m",
+    "bright_yellow": "\033[1;33m",
+    "bright_blue": "\033[1;34m",
+    "bright_magenta": "\033[1;35m",
+    "bright_cyan": "\033[1;36m",
+    "bright_white": "\033[1;37m",
+}
 
-def print_fancy(text, do_markdown, do_latex, do_color):
+
+def print_fancy(text, do_markdown, do_latex, do_color, color):
     """
     Processes the given text with Markdown, LaTeX, and color formatting.
     Supports h3, h4, italic (*), bold (**), code blocks, inline code, and LaTeX to Unicode conversion.
@@ -95,7 +113,7 @@ def print_fancy(text, do_markdown, do_latex, do_color):
 
             if do_color:
                 # Apply yellow foreground color
-                line = YELLOW_FG + line + RESET_YELLOW_FG
+                line = fg_color_map.get(color, RESET_FG) + line + RESET_FG
 
         result.append(line + "\n")
 

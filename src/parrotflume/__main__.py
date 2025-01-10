@@ -29,9 +29,10 @@ class Config:
     model: str = None
     temperature: float = 0.0
     max_tokens: int = 4096
-    markdown: bool = True
-    color: bool = False
-    latex: bool = True
+    do_markdown: bool = True
+    do_latex: bool = True
+    do_color: bool = False
+    color = "bright_yellow"
     func: bool = True
 
 
@@ -130,7 +131,7 @@ def run_oneshot(config, prompt):
         response = create_completion_response(config, messages, False)
 
     output = response.choices[0].message.content
-    print_fancy(output, config.markdown, config.latex, config.color)
+    print_fancy(output, config.do_markdown, config.do_latex, config.do_color, config.color)
 
 
 def get_file_content(file_name):
@@ -449,7 +450,7 @@ def run_chat(config):
 
         output = response.choices[0].message.content
         messages.append({"role": "assistant", "content": output})
-        print_fancy(output, config.markdown, config.latex, config.color)
+        print_fancy(output, config.do_markdown, config.do_latex, config.do_color, config.color)
 
     print("\n[Exiting chat mode]")
 
@@ -617,19 +618,22 @@ def main():
 
     # Features for chat modes
     if args.markdown is not None:
-        config.markdown = args.markdown
+        config.do_markdown = args.markdown
     elif config_file_data and "global_options" in config_file_data:
-        config.markdown = config_file_data["global_options"].get("markdown", config.markdown)
+        config.do_markdown = config_file_data["global_options"].get("markdown", config.do_markdown)
 
     if args.color is not None:
-        config.color = args.color
+        config.do_color = args.color
     elif config_file_data and "global_options" in config_file_data:
-        config.color = config_file_data["global_options"].get("color", config.color)
+        config.do_color = config_file_data["global_options"].get("color", config.do_color)
+
+    if config_file_data and "global_options" in config_file_data:
+        config.color = config_file_data["global_options"].get("color_name", config.color).lower().replace('-', '_').replace(' ', '_')
 
     if args.latex is not None:
-        config.latex = args.latex
+        config.do_latex = args.latex
     elif config_file_data and "global_options" in config_file_data:
-        config.latex = config_file_data["global_options"].get("latex", config.latex)
+        config.do_latex = config_file_data["global_options"].get("latex", config.do_latex)
 
     if args.func is not None:
         config.func = args.func
