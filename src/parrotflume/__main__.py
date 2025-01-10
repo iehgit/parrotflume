@@ -543,6 +543,7 @@ def main():
     args = parser.parse_args()
 
     env_api_key = os.getenv("OPENAI_API_KEY")
+    env_base_url = os.getenv("OPENAI_BASE_URL")
 
     config_file_data = load_config(config_path)
 
@@ -557,6 +558,8 @@ def main():
     # Base-URL
     if args.base_url:
         config.base_url = args.base_url
+    elif env_base_url:
+        config.base_url = env_base_url
     elif config.api_provider:
         setup_config_file_base_url(config, config_file_data)
     if not config.base_url:
