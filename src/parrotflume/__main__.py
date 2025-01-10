@@ -32,7 +32,6 @@ class Config:
     color: bool = False
     latex: bool = True
     func: bool = True
-    prompt: str = None
 
 
 def load_config(file_path):
@@ -107,7 +106,7 @@ def create_completion_response(config, messages, add_functions=True):
                 time.sleep(retry ** 2)
 
 
-def run_oneshot(config):
+def run_oneshot(config, prompt):
     system_message = (
         "You are an assistant providing a direct answer based on the user's input. "
         "You will provide a complete response immediately, without asking clarifying questions. "
@@ -117,7 +116,7 @@ def run_oneshot(config):
 
     messages = [
         {"role": "system", "content": system_message},
-        {"role": "user", "content": config.prompt}
+        {"role": "user", "content": prompt}
     ]
 
     response = create_completion_response(config, messages)
@@ -132,55 +131,77 @@ def run_oneshot(config):
     output = response.choices[0].message.content
     print_fancy(output, config.markdown, config.latex, config.color)
 
-    sys.exit(0)
+
+def get_file_content(file_name):
+    if not os.path.isfile(file_name):
+        print(f"Error: {file_name} does not exist.", file=sys.stderr)
+        sys.exit(1)
+    with open(file_name, "r") as f:
+        try:
+            return f.read()
+        except OSError as e:
+            print(f"Error opening {file_name}: {e}", file=sys.stderr)
+            sys.exit(1)
 
 
-def run_transform(config, file_content):
+def run_transform(config, prompt, file_paths):
     system_message = (
         "You are a file transformation assistant. "
         "You receive the content of a file. "
         "Execute instructions on the file content and output only the transformed, whole file. "
         "Do not add any explanations, commentary, markdown decoration such as \"\x60\x60\x60\" or other additional text. "
-        f"The instructions are:\n{config.prompt}"
+        f"The instructions are:\n{prompt}"
     )
 
-    messages = [
-        {"role": "system", "content": system_message},
-        {"role": "user", "content": file_content}
-    ]
+    def transform(file_content):
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": file_content}
+        ]
 
-    response = create_completion_response(config, messages)
-    if not response:
-        sys.exit(1)
-    output = response.choices[0].message.content
+        response = create_completion_response(config, messages)
+        if not response:
+            sys.exit(1)
+        output = response.choices[0].message.content
 
-    # normalize trailing newlines
-    if file_content.endswith('\n'):
-        output = output.rstrip('\n') + '\n'
+        # end output with newline if the input does
+        if file_content.endswith('\n'):
+            output = output.rstrip('\n') + '\n'
+        else:
+            output = output.rstrip('\n')
+
+        sys.stdout.write(output)
+
+    if not file_paths:
+        transform(sys.stdin.read())
     else:
-        output = output.rstrip('\n')
-
-    sys.stdout.write(output)
-
-    sys.exit(0)
+        for file in file_paths:
+            transform(get_file_content(file))
 
 
-def run_perform(config, file_content):
-    system_message = config.prompt
+def run_perform(config, prompt, file_paths):
+    system_message = prompt
 
-    messages = [
-        {"role": "system", "content": system_message},
-        {"role": "user", "content": file_content}
-    ]
+    def perform(file_content):
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": file_content}
+        ]
 
-    response = create_completion_response(config, messages)
-    if not response:
-        sys.exit(1)
-    output = response.choices[0].message.content
+        response = create_completion_response(config, messages)
+        if not response:
+            sys.exit(1)
+        output = response.choices[0].message.content
 
-    sys.stdout.write(output)
+        output += '\n'
 
-    sys.exit(0)
+        sys.stdout.write(output)
+
+    if not file_paths:
+        perform(sys.stdin.read())
+    else:
+        for file in file_paths:
+            perform(get_file_content(file))
 
 
 def get_multiline_input():
@@ -428,7 +449,6 @@ def run_chat(config):
         print_fancy(output, config.markdown, config.latex, config.color)
 
     print("\n[Exiting chat mode]")
-    sys.exit(0)
 
 
 def setup_config_file_base_url(config, config_file_data):
@@ -518,7 +538,7 @@ def main():
     parser.set_defaults(markdown=None, color=None, latex=None, func=None)
 
     group_non_interactive = parser.add_argument_group("arguments for transform/perform mode")
-    group_non_interactive.add_argument("filename", nargs="?", help="File to read from (default: stdin)")
+    group_non_interactive.add_argument("filenames", nargs="*", help="File(s) to read from (default: stdin)")
 
     args = parser.parse_args()
 
@@ -613,36 +633,13 @@ def main():
 
     del config_file_data
 
-    # Prompt
-    if args.oneshot:
-        config.prompt = args.oneshot
-    elif args.transform:
-        config.prompt = args.transform
-    elif args.perform:
-        config.prompt = args.perform
-
-    # File
-    if args.transform or args.perform:
-        if args.filename:
-            if not os.path.isfile(args.filename):
-                print(f"Error: {args.filename} does not exist.", file=sys.stderr)
-                sys.exit(1)
-            with open(args.filename, "r") as f:
-                try:
-                    file_content = f.read()
-                except OSError as e:
-                    print(f"Error opening {args.filename}: {e}", file=sys.stderr)
-                    sys.exit(1)
-        else:
-            file_content = sys.stdin.read()
-
     # Main logic
     if args.oneshot:
-        run_oneshot(config)
+        run_oneshot(config, args.oneshot)
     elif args.transform:
-        run_transform(config, file_content)
+        run_transform(config, args.transform, args.filenames)
     elif args.perform:
-        run_perform(config, file_content)
+        run_perform(config, args.perform, args.filenames)
     else:  # args.chat
         run_chat(config)
 
