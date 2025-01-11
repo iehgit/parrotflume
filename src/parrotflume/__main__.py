@@ -10,11 +10,11 @@ import openai
 from appdirs import user_config_dir
 from dataclasses import dataclass
 
-from functions import functions, handle_function_call
-from fancy import print_fancy, print_reset
-from auto_completer import AutoCompleter
-import fallbacks
-import model_quirks
+from .functions import functions, handle_function_call
+from .fancy import print_fancy, print_reset
+from .auto_completer import AutoCompleter
+from . import fallbacks
+from . import model_quirks
 
 app_name = "parrotflume"
 config_dir = user_config_dir(appname=app_name)
