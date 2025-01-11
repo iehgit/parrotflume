@@ -238,7 +238,7 @@ def run_chat(config):
     auto_completer = AutoCompleter(get_api_providers())
     auto_completer.setup()  # alters global state of readline
 
-    print("[Entering chat mode. /q to quit, /r to reset, /b for multiline buffer, /h for help]")
+    print("[Entering chat:  /q to quit, /r to reset, /b for multi line buffer, /h for help]")
     while True:
         try:
             user_input = input("> ")
@@ -251,7 +251,7 @@ def run_chat(config):
         if user_input.strip() == "/h":
             print(
                 "/a try prompt again\n"
-                "/b multiline input buffer\n"
+                "/b multi line input buffer\n"
                 "/c <file_path> save latest code block\n"
                 "/d <file_path> dump chat history\n"
                 "/f <file path> input file\n"
@@ -451,7 +451,7 @@ def run_chat(config):
         messages.append({"role": "assistant", "content": output})
         print_fancy(output, config.do_markdown, config.do_latex, config.do_color, config.color)
 
-    print("\n[Exiting chat mode]")
+    print("\n[Exiting chat]")
 
 
 def setup_config_file_base_url(config, config_file_data):

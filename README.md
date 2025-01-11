@@ -15,6 +15,8 @@
 - **Function Calling**: Let the LLM evaluate mathematical expressions, solve equations, and more using built-in functions.
 - **Auto-Completion**: Enjoy tab-completion for API providers, models, and file paths when using commands in the interactive chat interface.
 
+![screenshot](screenshot.png)
+
 ## Installation
 To install ParrotFlume, clone the repository and install the package alongside its required dependencies:
 
@@ -168,6 +170,12 @@ ParrotFlume is licensed under an extended MIT License. See the [LICENSE](LICENSE
 
 - The name "ParrotFlume" is inspired by the exhaustion of all slightly less silly names by different projects, and the title of a paper called "On the Dangers of Stochastic Parrots: Can Language Models Be Too Big? 🦜"[¹](https://dl.acm.org/doi/10.1145/3442188.3445922).
 - Special thanks to the developers of [llama.cpp](https://github.com/ggerganov/llama.cpp), which works nicely as a backend for ParrotFlume.
+
+## FAQ
+
+### Is it dead?
+
+No no he's not dead, he's, he's restin'! Remarkable bird, the Norwegian Blue, idn'it, ay? Beautiful plumage!
 
 ---
 
