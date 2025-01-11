@@ -1,42 +1,54 @@
 # ParrotFlume
 
-ParrotFlume is a versatile command-line tool designed to interact with OpenAI-compatible APIs, providing a seamless interface for chat, file transformation, and task execution using large language models (LLMs). The name "ParrotFlume" is inspired by the concept of "flume" referring to input/output pipes and "parrot" symbolizing the stochastic nature of LLMs, often referred to as "stochastic parrots."
+**ParrotFlume** is a versatile command-line tool for using pipes (flumes) with LLMs (stochastic parrots[¹](https://dl.acm.org/doi/10.1145/3442188.3445922)), through OpenAI-compatible APIs. It also comes with a neat interactive chat CLI. Feed it through stdin, files, or keyboard input. Use it for scripting, single tasks or idle chitchat.
 
-## Features
+## Operation Modes
 
-- **Interactive Chat Mode**: Engage in a conversational interface with the LLM, supporting multiline input, chat history management, and more.
-- **One-Shot Mode**: Provide a single prompt and receive an immediate response from the LLM.
-- **File Transformation**: Transform file content based on a given prompt, ideal for batch processing or automated tasks.
-- **Task Execution**: Perform specific tasks on file content using the LLM, with the ability to customize the prompt.
-- **Function Calling**: Utilize built-in functions for mathematical operations, date retrieval, and more.
-- **Markdown, LaTeX, and Color Support**: Enhanced output formatting with Markdown, LaTeX, and ANSI color codes.
+- **Transform Mode**: Transform data from stdin or file content based on a given instruction.
+- **Perform Mode**: Prompt the LLM about data from stdin or file content.
+- **Interactive Chat Mode**: Engage in a conversation with the LLM.
+- **One-Shot Mode**: Provide a single prompt and receive an immediate, complete response from the LLM.
+
+## Chat features
+- **Model switching**: Seamlessly switch between API providers and models during a conversation. Ask a second model to verify the reply of the first.
+- **Markdown, LaTeX, and Color Support**: Enhanced output formatting with ANSI escape sequences and LaTeX to Unicode replacement.
+- **Function Calling**: Let the LLM evaluate mathematical expressions, solve equations, and more using built-in functions.
+- **Auto-Completion**: Enjoy tab-completion for API providers, models, and file paths when using commands in the interactive chat interface.
 
 ## Installation
-
-To install ParrotFlume, clone the repository and install the required dependencies:
+To install ParrotFlume, clone the repository and install the package alongside its required dependencies:
 
 ```bash
-git clone https://github.com/yourusername/ParrotFlume.git
-cd ParrotFlume
-pip install -r requirements.txt
+git clone https://github.com/iehgit/parrotflume.git
+cd parrotflume
+pip install .
 ```
 
 ## Configuration
 
-ParrotFlume uses a TOML configuration file to manage API providers, model settings, and global options. The configuration file should be placed in the appropriate user configuration directory.
+ParrotFlume uses a TOML configuration file to manage API providers, model settings, and global options.
+Ask `parrotflume --help` about the place to put it for your operating system.  
+For example, in Linux, the file should be placed there:
+```
+~/.config/parrotflume/parrotflume.config.toml
+```
+The configuration file is optional if all needed parameters (url, key, model) are provided otherwise.
 
 ### Example Configuration (`parrotflume.config.toml`)
 
 ```toml
-[global_options]
-temperature = 0.1  # Default temperature for the model
-max_tokens = 4096  # Maximum number of tokens to generate
-markdown = true    # Enable markdown rendering
-color = true       # Enable colored output
-latex = true       # Enable LaTeX replacement
-func = true        # Enable function calling
+# Example TOML configuration file for parrotflume
 
-# API providers
+[global_options]
+temperature = 0.1     # Default temperature for the model
+max_tokens = 4096     # Maximum number of tokens to generate
+markdown = true       # Enable markdown rendering
+latex = true          # Enable LaTeX replacement
+color = true          # Enable colored output
+color_name = "green"  # ANSI name for colored output
+func = true           # Enable function calling
+
+# API providers, the first in the list is used as default
 [[api_providers]]
 name = "openai"
 base_url = "https://api.openai.com/v1/"
@@ -56,22 +68,9 @@ api_key = "sk-no-key-required"  # not used, NOT allowed to be empty for llama.cp
 model = ""   # not used, allowed to be empty for llama.cpp
 ```
 
-### Configuration File Location (Linux)
-
-On Linux, the configuration file is typically located in the user's configuration directory:
-
-```bash
-~/.config/parrotflume/parrotflume.config.toml
-```
-
-You can create the directory and file manually if it doesn't exist:
-
-```bash
-mkdir -p ~/.config/parrotflume
-touch ~/.config/parrotflume/parrotflume.config.toml
-```
-
 ## Usage
+
+Command line parameters supersede environment variables. Environment variables supersede configuration file settings.
 
 ### Command-Line Parameters
 
@@ -79,94 +78,77 @@ touch ~/.config/parrotflume/parrotflume.config.toml
 - **`--chat`**: Start an interactive chat session with the LLM.
 - **`--oneshot "<prompt>"`**: Provide a single prompt and get an immediate response. Example:
   ```bash
-  python -m parrotflume --oneshot "Explain the concept of quantum entanglement in simple terms."
+  parrotflume --oneshot "What is the meaning of life, the universe, and everything?"
   ```
-- **`--transform "<prompt>" [filename]`**: Transform the content of a file using a prompt. If no filename is provided, reads from `stdin`. Example:
+- **`--transform "<prompt>" [filename]`**: Transform the content of a file using a prompt. If no filename is provided, reads from `stdin`. Examples:
   ```bash
-  python -m parrotflume --transform "Translate this text to French" input.txt
+  parrotflume --transform "Convert all strings to uppercase" input.txt 
   ```
-  Using `stdin` and `stdout`:
   ```bash
-  cat input.txt | python -m parrotflume --transform "Summarize this text" > output.txt
+  parrotflume --transform "Fix all syntax errors" < input.txt > output.txt
   ```
-- **`--perform "<prompt>" [filename]`**: Perform a task on the content of a file. If no filename is provided, reads from `stdin`. Example:
+- **`--perform "<prompt>" [filename]`**: Perform a task on the content of a file. If no filename is provided, reads from `stdin`. Examples:
   ```bash
-  python -m parrotflume --perform "Extract all dates from this text" input.txt
+  parrotflume --perform "Extract all email addresses" input.txt > emails.txt
   ```
-  Using `stdin` and `stdout`:
   ```bash
-  cat input.txt | python -m parrotflume --perform "Extract all email addresses" > emails.txt
+  dmesg | parrotflume --perform "Explain all ACPI errors" 
   ```
 - **`--list`**: List all available models from the configured API provider. Example:
   ```bash
-  python -m parrotflume --list
+  parrotflume --list
   ```
 
 #### API Configuration Parameters
 - **`--api-provider <provider>`**: Set the API provider (e.g., `openai`, `deepseek`, `llama.cpp`). Example:
   ```bash
-  python -m parrotflume --api-provider openai --chat
+  parrotflume --api-provider openai --chat
   ```
 - **`--base-url <url>`**: Set the base URL for the API provider. Example:
   ```bash
-  python -m parrotflume --base-url "https://api.openai.com/v1/" --chat
+  parrotflume --base-url "https://api.openai.com/v1/" --chat
   ```
 - **`--key <key>`**: Set the API key for the API provider. Example:
   ```bash
-  python -m parrotflume --key "your-api-key-here" --chat
+  parrotflume --key "your-api-key-here" --chat
   ```
 - **`--model <model>`**: Set the model to use (e.g., `gpt-4o`, `deepseek-chat`). Example:
   ```bash
-  python -m parrotflume --model gpt-4o --chat
+  parrotflume --model gpt-4o --chat
   ```
 
 #### Model Behavior Parameters
 - **`--max-tokens <max>`**: Set the maximum number of tokens to generate. Example:
   ```bash
-  python -m parrotflume --max-tokens 100 --chat
+  parrotflume --max-tokens 2048 --chat
   ```
-- **`--warmth <temperature>`**: Set the temperature for the model (controls randomness, 0.0 to 2.0). Example:
+- **`--warmth <temperature>`**: Set the temperature for the model. Example:
   ```bash
-  python -m parrotflume --warmth 0.7 --chat
+  parrotflume --warmth 0.7 --chat
   ```
 
 #### Output Formatting Parameters
-- **`--markdown`**: Enable Markdown rendering in the output. Example:
-  ```bash
-  python -m parrotflume --markdown --chat
-  ```
-- **`--no-markdown`**: Disable Markdown rendering in the output. Example:
-  ```bash
-  python -m parrotflume --no-markdown --chat
-  ```
-- **`--color`**: Enable colored output. Example:
-  ```bash
-  python -m parrotflume --color --chat
-  ```
-- **`--no-color`**: Disable colored output. Example:
-  ```bash
-  python -m parrotflume --no-color --chat
-  ```
-- **`--latex`**: Enable LaTeX replacement in the output. Example:
-  ```bash
-  python -m parrotflume --latex --chat
-  ```
-- **`--no-latex`**: Disable LaTeX replacement in the output. Example:
-  ```bash
-  python -m parrotflume --no-latex --chat
-  ```
-- **`--func`**: Enable function calling (for supported models). Example:
-  ```bash
-  python -m parrotflume --func --chat
-  ```
-- **`--no-func`**: Disable function calling. Example:
-  ```bash
-  python -m parrotflume --no-func --chat
-  ```
+These apply to chat and one-shot modes.
 
-## Environment Variable
+- **`--markdown`**: Enable Markdown rendering in the output.
+- **`--no-markdown`**: Disable Markdown rendering in the output.
+- **`--color`**: Enable colored output.
+- **`--no-color`**: Disable colored output.
+- **`--latex`**: Enable LaTeX replacement in the output.
+- **`--no-latex`**: Disable LaTeX replacement in the output. 
 
-You can set the `OPENAI_API_KEY` environment variable to avoid hardcoding your API key in the configuration file:
+#### Function Calling Parameters
+
+- **`--func`**: Enable function calling.
+- **`--no-func`**: Disable function calling.
+
+This provides to the LLM some mathematical tools, the current date, and a way to sift through text via regex.  
+**Note**: Works only for API providers and models that support function calling via the "function" API (e.g. openai's gpt-4o), which is distinct from the "tool" API (e.g. deepseek).  
+
+
+### Environment Variable
+
+You can set the `OPENAI_API_KEY` environment variable to avoid passing your API key in a command line where it might be logged:
 
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
@@ -180,13 +162,13 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 
 ## License
 
-ParrotFlume is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+ParrotFlume is licensed under an extended MIT License. See the [LICENSE](LICENSE) file for more details.
 
 ## Acknowledgments
 
-- The name "ParrotFlume" is inspired by the concept of "stochastic parrots" in LLMs and the idea of flumes as input/output pipes.
-- Special thanks to the OpenAI community for their continuous support and development of powerful language models.
+- The name "ParrotFlume" is inspired by the exhaustion of all slightly less silly names by different projects, and the title of a paper called "On the Dangers of Stochastic Parrots: Can Language Models Be Too Big? 🦜"[¹](https://dl.acm.org/doi/10.1145/3442188.3445922).
+- Special thanks to the developers of [llama.cpp](https://github.com/ggerganov/llama.cpp), which works nicely as a backend for ParrotFlume.
 
 ---
 
-Enjoy using ParrotFlume! For any questions or issues, please refer to the [GitHub issues page](https://github.com/yourusername/ParrotFlume/issues).
+Enjoy using ParrotFlume! For any questions or issues, please refer to the [GitHub issues page](https://github.com/iehgit/parrotflume/issues).

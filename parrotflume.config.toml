@@ -9,7 +9,7 @@ color = true          # Enable colored output
 color_name = "green"  # ANSI name for colored output
 func = true           # Enable function calling
 
-# API providers
+# API providers, the first in the list is used as default
 [[api_providers]]
 name = "openai"
 base_url = "https://api.openai.com/v1/"
@@ -26,4 +26,4 @@ model = "deepseek-chat"
 name = "llama.cpp"
 base_url = "http://localhost:8080/v1/"
 api_key = "sk-no-key-required"  # not used, NOT allowed to be empty for llama.cpp
-model = ""   # not used, allowed to be empty for llama.cpp
+model = ""  # not used, allowed to be empty for llama.cpp

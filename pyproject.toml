@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "parrotflume"
 dynamic = ["version"]
-description = "ParrotFlume is a Python project for interacting with OpenAI-like APIs, performing mathematical operations, and providing a CLI for chat and file transformations."
+description = "parrotflume: Process data from a pipe or file with an OpenAI-compatible API, or chat with it."
 authors = [
     { name = "Sebastian Dalfuß", email = "py@sedf.de" },
 ]
@@ -19,7 +19,7 @@ dependencies = [
     "appdirs>=1.4.4",
 ]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
