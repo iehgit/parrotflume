@@ -9,7 +9,6 @@ import tomllib
 import openai
 from appdirs import user_config_dir
 from dataclasses import dataclass
-from urllib.parse import urljoin
 
 from functions import functions, handle_function_call
 from fancy import print_fancy, print_reset
@@ -372,7 +371,7 @@ def run_chat(config):
                 config = old_config
                 print(f"[no model found for {new_provider}]")
                 continue
-            openai.base_url = urljoin(config.base_url, "/")
+            openai.base_url = config.base_url.rstrip('/') + '/'
             openai.api_key = config.api_key
             print(f"[API provider switched to {new_provider}]")
             continue
@@ -582,7 +581,7 @@ def main():
         print("api_key not configured", file=sys.stderr)
         sys.exit(1)
 
-    openai.base_url = urljoin(config.base_url, "/")
+    openai.base_url = config.base_url.rstrip('/') + '/'
     openai.api_key = config.api_key
 
     # List
