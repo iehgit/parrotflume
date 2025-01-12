@@ -64,5 +64,6 @@ class TestPrintFancy(unittest.TestCase):
         expected_output = "\033[0m"
         self.assertEqual(expected_output, output)
 
+
 if __name__ == "__main__":
     unittest.main()

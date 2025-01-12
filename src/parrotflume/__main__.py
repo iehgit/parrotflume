@@ -7,10 +7,11 @@ import sys
 import time
 import tomllib
 import openai
+from openai.types.chat import ChatCompletionMessageToolCall
 from appdirs import user_config_dir
 from dataclasses import dataclass
 
-from parrotflume.functions import functions, handle_function_call
+from parrotflume.tools import tools, handle_tool_call
 from parrotflume.fancy import print_fancy, print_reset
 from parrotflume.auto_completer import AutoCompleter
 from parrotflume import fallbacks
@@ -51,6 +52,23 @@ def load_config(file_path):
         sys.exit(1)
 
 
+def truncate_tool_call_ids(messages, max_id_length=40):
+    for message in messages:
+        # the call
+        if "tool_calls" in message:
+            for tool_call in message["tool_calls"]:
+                # tool_call is an object
+                if hasattr(tool_call, "id") and len(tool_call.id) > max_id_length:
+                    tool_call.id = tool_call.id[:max_id_length]
+                # tool_call is serialized
+                elif "id" in tool_call and len(tool_call["id"]) > max_id_length:
+                    tool_call["id"] = tool_call["id"][:max_id_length]
+        # the return
+        elif "tool_call_id" in message and len(message["tool_call_id"]) > max_id_length:
+            message["tool_call_id"] = message["tool_call_id"][:max_id_length]
+    return messages
+
+
 def create_completion_response(config, messages, add_functions=True):
     # Ugly quirk for openAI o1-preview* model: Does not know system messages
     if any(config.model.startswith(prefix) for prefix in model_quirks.no_system):
@@ -65,16 +83,15 @@ def create_completion_response(config, messages, add_functions=True):
             messages[0]["role"] = "system"
 
     # Ugly quirk for openAI o1-preview* model: Does not know function calls
-    # Ugly quirk for deepseek-* model: Uses tools instead of functions
-    if any(config.model.startswith(prefix) for prefix in model_quirks.no_function_call + model_quirks.tool_call):
-        messages = [message for message in messages if message["role"] != "function"]
+    if any(config.model.startswith(prefix) for prefix in model_quirks.no_function_call):
+        messages = [message for message in messages if message["role"] != "tool" and not "tool_calls" in message]
 
     params = {
         "model": config.model,
         "messages": messages,
     }
 
-    # Ugly quirk for openAI o* models: New parameter for max_tokens, no temperature
+    # Ugly quirk for openAI o* models: New parameter for max_tokens
     if any(config.model.startswith(prefix) for prefix in model_quirks.max_completion_tokens):
         params["max_completion_tokens"] = config.max_tokens
     else:
@@ -85,10 +102,9 @@ def create_completion_response(config, messages, add_functions=True):
         params["temperature"] = config.temperature
 
     # Ugly quirk for openAI o1-preview* model: Does not know function calls
-    # Ugly quirk for deepseek-* model: Uses tools instead of functions
-    if add_functions and config.func and not any(config.model.startswith(prefix) for prefix in model_quirks.no_function_call + model_quirks.tool_call):
-        params["functions"] = functions
-        params["function_call"] = "auto"
+    if add_functions and config.func and not any(config.model.startswith(prefix) for prefix in model_quirks.no_function_call):
+        params["tools"] = tools
+        params["tool_choice"] = "auto"
 
     # Try to get a completion, on rate limit retry 4 times with increasing duration
     retry = 0
@@ -105,6 +121,32 @@ def create_completion_response(config, messages, add_functions=True):
                 return None
             else:
                 time.sleep(retry ** 2)
+
+
+def handle_tool_calls(config, messages, response):
+    """
+    Handles tool calls in the assistant's response and updates the messages list.
+    Returns the final response after all tool calls are processed.
+    """
+    while response.choices[0].finish_reason == "tool_calls":
+        assistant_message = response.choices[0].message
+        tool_calls = assistant_message.tool_calls
+
+        # Append the assistant's message with tool_calls to the messages list
+        messages.append({
+            "role": "assistant",
+            "content": None,  # Content is None when tool_calls are present
+            "tool_calls": tool_calls
+        })
+
+        # Handle each tool call
+        for tool_call in tool_calls:
+            handle_tool_call(messages, tool_call)
+
+        # Make a follow-up API call with the updated messages
+        response = create_completion_response(config, messages, False)
+
+    return response
 
 
 def run_oneshot(config, prompt):
@@ -124,10 +166,7 @@ def run_oneshot(config, prompt):
     if not response:
         sys.exit(1)
 
-    while response.choices[0].finish_reason == "function_call":
-        function_call = response.choices[0].message.function_call
-        handle_function_call(messages, function_call)
-        response = create_completion_response(config, messages, False)
+    response = handle_tool_calls(config, messages, response)
 
     output = response.choices[0].message.content
     print_fancy(output, config.do_markdown, config.do_latex, config.do_color, config.color)
@@ -224,6 +263,19 @@ def get_api_providers():
         return [provider["name"] for provider in config_file_data["api_providers"]]
     return []
 
+def custom_serializer(obj):
+    if isinstance(obj, ChatCompletionMessageToolCall):
+        return {
+            "id": obj.id,
+            "type": obj.type,
+            "function": {
+                "name": obj.function.name,
+                "arguments": obj.function.arguments
+            }
+        }
+    # Add other custom serializations if needed
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+
 
 def run_chat(config):
     system_message = (
@@ -316,7 +368,7 @@ def run_chat(config):
             try:
                 with open(file_path, "w") as f:
                     for message in messages:
-                        f.write(f"{json.dumps(message)}\n")
+                        f.write(f"{json.dumps(message, default=custom_serializer)}\n")
                 print(f"[Chat history saved to {file_path}]")
             except OSError as e:
                 print(f"[Error saving chat history: {e}]")
@@ -373,6 +425,8 @@ def run_chat(config):
                 continue
             openai.base_url = config.base_url.rstrip('/') + '/'
             openai.api_key = config.api_key
+            # deepseek has 43 byte tool.id while openai allows max. 40
+            truncate_tool_call_ids(messages)
             print(f"[API provider switched to {new_provider}]")
             continue
 
@@ -416,6 +470,8 @@ def run_chat(config):
                     # Replace the current chat history with the loaded messages
                     if new_messages:
                         messages = new_messages
+                        # deepseek has 43 byte tool.id while openai allows max. 40
+                        truncate_tool_call_ids(messages)
                         print(f"[Chat history loaded from {file_path}]")
                     else:
                         print(f"[No valid chat history found in {file_path}]")
@@ -441,11 +497,8 @@ def run_chat(config):
         response = create_completion_response(config, messages)
         if not response:
             continue
-        while response.choices[0].finish_reason == "function_call":
-            function_call = response.choices[0].message.function_call
-            print(f"[{function_call.name} called]")
-            handle_function_call(messages, function_call)
-            response = create_completion_response(config, messages, False)
+
+        response = handle_tool_calls(config, messages, response)
 
         output = response.choices[0].message.content
         messages.append({"role": "assistant", "content": output})

@@ -1,5 +1,4 @@
 no_function_call = ["o1-preview"]  # supports no function calling at all
-tool_call = ["deepseek-"]  # uses "tools" instead of "functions"
 no_system = ["o1-preview"]  # does not know role "system"
 developer = ["o1", "o3"]  # "system" has been renamed to "developer"
 max_completion_tokens = ["o1", "o3"]  # uses "max_completion_tokens" instead of "max_tokens"
