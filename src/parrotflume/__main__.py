@@ -72,10 +72,10 @@ def truncate_tool_call_ids(messages, max_id_length=40):
 def create_completion_response(config, messages, add_functions=True):
     # Ugly quirk for openAI o1-preview* model: Does not know system messages
     if any(config.model.startswith(prefix) for prefix in model_quirks.no_system):
-        if messages[0]["role"] == "system":
+        if messages[0]["role"] == "system" or messages[0]["role"] == "developer":
             messages[0]["role"] = "user"
     # Ugly quirk for openAI o* (non-preview) models: system has been renamed to developer
-    elif any(config.model.startswith(prefix) for prefix in model_quirks.no_system):
+    elif any(config.model.startswith(prefix) for prefix in model_quirks.developer):
         if messages[0]["role"] == "system":
             messages[0]["role"] = "developer"
     else:
@@ -83,7 +83,7 @@ def create_completion_response(config, messages, add_functions=True):
             messages[0]["role"] = "system"
 
     # Ugly quirk for openAI o1-preview* model: Does not know function calls
-    if any(config.model.startswith(prefix) for prefix in model_quirks.no_function_call):
+    if not config.func or any(config.model.startswith(prefix) for prefix in model_quirks.no_function_call):
         messages = [message for message in messages if message["role"] != "tool" and not "tool_calls" in message]
 
     params = {
@@ -111,8 +111,16 @@ def create_completion_response(config, messages, add_functions=True):
     while True:
         try:
             return openai.chat.completions.create(**params)
+        except openai.APIConnectionError as e:
+            print(f"Failed to connect to API: {e}", file=sys.stderr)
+            return None
         except openai.APIError as e:
-            print(f"API returned an API Error: {e}", file=sys.stderr)
+            if isinstance(e.body, dict) and e.body["type"] == "server_error" and "message" in e.body and "tools" in e.body["message"]:
+                print(f"[{config.api_provider} does not support function calling via \"tools\"]")
+                config.func = False
+                return create_completion_response(config, messages, add_functions=False)
+            else:
+                print(f"API returned an API Error: {e}", file=sys.stderr)
             return None
         except openai.RateLimitError as e:
             print(f"API request exceeded rate limit: {e}", file=sys.stderr)
@@ -423,6 +431,7 @@ def run_chat(config):
                 config = old_config
                 print(f"[no model found for {new_provider}]")
                 continue
+            setup_config_file_func(config, config_file_data)
             openai.base_url = config.base_url.rstrip('/') + '/'
             openai.api_key = config.api_key
             # deepseek has 43 byte tool.id while openai allows max. 40
@@ -552,6 +561,14 @@ def setup_config_file_model(config, config_file_data):
             print(f"model not configured, trying {config.model if config.model else "\"\""} for {config.api_provider}", file=sys.stderr)
 
 
+def setup_config_file_func(config, config_file_data):
+    if config_file_data and "api_providers" in config_file_data and config_file_data["api_providers"]:
+        for provider in config_file_data["api_providers"]:
+            if provider["name"] == config.api_provider:
+                config.func = provider.get("func", config.func)
+                break
+
+
 def main():
     config = Config()
 
@@ -656,6 +673,12 @@ def main():
         print("model not configured", file=sys.stderr)
         sys.exit(1)
 
+    # Function calling (boolean)
+    if args.func is not None:
+        config.func = args.func
+    elif config.api_provider:
+        setup_config_file_func(config, config_file_data)
+
     # Temperature
     if args.warmth is not None:
         config.temperature = args.warmth
@@ -686,11 +709,6 @@ def main():
         config.do_latex = args.latex
     elif config_file_data and "global_options" in config_file_data:
         config.do_latex = config_file_data["global_options"].get("latex", config.do_latex)
-
-    if args.func is not None:
-        config.func = args.func
-    elif config_file_data and "global_options" in config_file_data:
-        config.func = config_file_data["global_options"].get("func", config.func)
 
     del config_file_data
 
