@@ -73,6 +73,18 @@ class TestHandleFunctionCall(unittest.TestCase):
         self.assertEqual(self.messages[0]["name"], "regex_match")
         self.assertEqual(self.messages[0]["content"], "['123', '456']")
 
+    def test_handle_count_chars(self):
+        # Test handling a regex_match function call
+        function_call = type('FunctionCall', (), {'name': 'count_chars', 'arguments': json.dumps({"text": "1234567890"})})
+
+        # Call the function
+        handle_function_call(self.messages, function_call)
+
+        # Verify the result
+        self.assertEqual(len(self.messages), 1)
+        self.assertEqual(self.messages[0]["role"], "function")
+        self.assertEqual(self.messages[0]["name"], "count_chars")
+        self.assertEqual(self.messages[0]["content"], "10")
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,25 +1,10 @@
 import json
 import re
-from ast import literal_eval
 from datetime import datetime
 from sympy import simplify, solve, sympify, Eq, integrate, diff
 from sympy.parsing.sympy_parser import parse_expr
 
 functions = [
-    {
-        "name": "literal_eval",
-        "description": "Evaluate a simple Python or math expression with ast.literal_eval()",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "expression": {
-                    "type": "string",
-                    "description": "simple Python or math expression"
-                }
-            },
-            "required": ["expression"]
-        }
-    },
     {
         "name": "get_current_date",
         "description": "Get the current (today's) date",
@@ -102,31 +87,37 @@ functions = [
     },
     {
         "name": "regex_match",
-        "description": "Applies a regex pattern to a text and returns the matches.",
+        "description": "Applies a regex pattern to a text and returns the matches",
         "parameters": {
             "type": "object",
             "properties": {
                 "pattern": {
                     "type": "string",
-                    "description": "The regex pattern to apply."
+                    "description": "regex pattern to apply."
                 },
                 "text": {
                     "type": "string",
-                    "description": "The text to search within."
+                    "description": "text to search within."
                 }
             },
             "required": ["pattern", "text"]
         }
-}
+    },
+    {
+        "name": "count_chars",
+        "description": "Counts the number of characters in a string",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "text": {
+                    "type": "string",
+                    "description": "string whose characters are to be counted",
+                }
+            },
+            "required": ["text"],
+        },
+    },
 ]
-
-
-def handle_literal_eval(messages, arguments):
-    try:
-        result = literal_eval(arguments)
-        messages.append({"role": "function", "name": "literal_eval", "content": str(result)})
-    except (ValueError, SyntaxError) as e:
-        messages.append({"role": "function", "name": "literal_eval", "content": str(e)})
 
 
 def handle_get_current_date(messages):
@@ -198,12 +189,20 @@ def handle_regex_match(messages, arguments):
         messages.append({"role": "function", "name": "regex_match", "content": str(e)})
 
 
+def handle_count_chars(messages, arguments):
+    try:
+        text = arguments["text"]
+
+        result = len(text)
+        messages.append({"role": "function", "name": "count_chars", "content": str(result)})
+    except Exception as e:
+        messages.append({"role": "function", "name": "count_chars", "content": str(e)})
+
+
 def handle_function_call(messages, function_call):
     args = json.loads(function_call.arguments)
 
-    if function_call.name == "literal_eval":
-        handle_literal_eval(messages, function_call.arguments)
-    elif function_call.name == "get_current_date":
+    if function_call.name == "get_current_date":
         handle_get_current_date(messages)
     elif function_call.name == "sympy_simplify":
         handle_sympy_simplify(messages, args)
@@ -215,3 +214,5 @@ def handle_function_call(messages, function_call):
         handle_sympy_differentiate(messages, args)
     elif function_call.name == "regex_match":
         handle_regex_match(messages, args)
+    elif function_call.name == "count_chars":
+        handle_count_chars(messages, args)
