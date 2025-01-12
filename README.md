@@ -144,8 +144,8 @@ These apply to chat and one-shot modes.
 - **`--func`**: Enable function calling.
 - **`--no-func`**: Disable function calling.
 
-This provides to the LLM some mathematical tools, the current date, and a way to sift through text via regex.  
-**Note**: Works only for API providers and models that support function calling via the "function" API (e.g. openai's gpt-4o), which is distinct from the "tool" API (e.g. deepseek).  
+This provides the LLM with some mathematical tools, the current date, and a way to sift through text using regex.  
+The function calling feature requires support from both the API provider and the LLM.
 
 
 ### Environment Variable
