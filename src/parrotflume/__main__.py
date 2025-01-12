@@ -253,7 +253,7 @@ def run_perform(config, prompt, file_paths):
 
 
 def get_multiline_input():
-    print("[Enter multiline input (press Ctrl+D to end)]")
+    print(f"[Enter multiline input (press {'Ctrl+Z' if sys.platform == 'win32' else 'Ctrl+D'} to end)]")
     lines = []
     try:
         while True:
@@ -321,6 +321,7 @@ def run_chat(config):
                 "/p <provider> switch API provider\n"
                 "/q quit\n"
                 "/r reset chat history\n"
+                "/s show provider and model\n"
                 "/t truncate last round\n"
                 "/u <file_path> un-dump (load) chat history\n"
                 "/w <float> set warmth (temperature)\n"
@@ -437,6 +438,10 @@ def run_chat(config):
             # deepseek has 43 byte tool.id while openai allows max. 40
             truncate_tool_call_ids(messages)
             print(f"[API provider switched to {new_provider}]")
+            continue
+
+        elif user_input.strip() == "/s":
+            print(f"{config.api_provider}/{config.model}")
             continue
 
         elif user_input.strip() == "/t":
