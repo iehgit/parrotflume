@@ -700,6 +700,10 @@ def main():
     elif config_file_data and "global_options" in config_file_data:
         config.temperature = config_file_data["global_options"].get("temperature", config.temperature)
 
+    if not 0.0 <= config.temperature <= 2.0:
+        print(f"temperature {config.temperature} out of tange [0.0, 2.0]", file=sys.stderr)
+        sys.exit(1)
+
     # Max tokens
     if args.max_tokens is not None:
         config.max_tokens = args.max_tokens
