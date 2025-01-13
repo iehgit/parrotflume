@@ -32,8 +32,9 @@ class Config:
     do_markdown: bool = True
     do_latex: bool = True
     do_color: bool = False
-    color = "bright_yellow"
+    color: str = "bright_yellow"
     func: bool = True
+    json: bool = False
 
 
 def load_config(file_path):
@@ -86,10 +87,18 @@ def create_completion_response(config, messages, add_functions=True):
     if not config.func or any(config.model.startswith(prefix) for prefix in model_quirks.no_function_call):
         messages = [message for message in messages if message["role"] != "tool" and not "tool_calls" in message]
 
+    # For JSON mode, the API actually requires the string "json" to be present in the user prompt
+    jtag = "json:\n"
+    if config.json and messages[-1]["role"] == "user" and not messages[-1]["content"].startswith(jtag):
+        messages[-1]["content"] = jtag + messages[-1]["content"]
+
     params = {
         "model": config.model,
         "messages": messages,
     }
+
+    if config.json and messages[-1]["role"] == "user":
+        params["response_format"] = { "type": "json_object" }
 
     # Ugly quirk for openAI o* models: New parameter for max_tokens
     if any(config.model.startswith(prefix) for prefix in model_quirks.max_completion_tokens):
@@ -604,6 +613,7 @@ def main():
     parser.add_argument("-m", "--model", metavar="<model>", help="Set model.")
     parser.add_argument("-x", "--max-tokens", type=int, metavar="<max>", help=f"Set maximum number of tokens (default: {config.max_tokens}).")
     parser.add_argument("-w", "--warmth", type=float, metavar="<temperature>", help=f"Set model temperature (default: {config.temperature}).")
+    parser.add_argument("-j", "--json", action="store_true", help=f"Enable JSON output mode.")
 
     group_interactive = parser.add_argument_group("options for chat/oneshot mode")
     group_interactive.add_argument("--markdown", dest="markdown", action="store_true", help="Enable ANSI escape sequences for markdown.")
@@ -695,6 +705,9 @@ def main():
         config.max_tokens = args.max_tokens
     elif config_file_data and "global_options" in config_file_data:
         config.max_tokens = config_file_data["global_options"].get("max_tokens", config.max_tokens)
+
+    # JSON
+    config.json = args.json
 
     # Features for chat modes
     if args.markdown is not None:
