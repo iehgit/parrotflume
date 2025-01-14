@@ -220,9 +220,10 @@ def handle_count_chars(messages, arguments):
         messages.append({"role": "tool", "name": "count_chars", "content": str(e)})
 
 
-def handle_tool_call(messages, tool_call):
+def handle_tool_call(messages, tool_call, do_print=False):
     args = json.loads(tool_call.function.arguments)
-    print(f"[{tool_call.function.name} called]")
+    if do_print:
+        print(f"[{tool_call.function.name} called]")
 
     if tool_call.function.name == "get_current_date":
         result = datetime.now().strftime("%Y-%m-%d")

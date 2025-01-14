@@ -140,7 +140,7 @@ def create_completion_response(config, messages, add_functions=True):
                 time.sleep(retry ** 2)
 
 
-def handle_tool_calls(config, messages, response):
+def handle_tool_calls(config, messages, response, do_print):
     """
     Handles tool calls in the assistant's response and updates the messages list.
     Returns the final response after all tool calls are processed.
@@ -158,7 +158,7 @@ def handle_tool_calls(config, messages, response):
 
         # Handle each tool call
         for tool_call in tool_calls:
-            handle_tool_call(messages, tool_call)
+            handle_tool_call(messages, tool_call, do_print)
 
         # Make a follow-up API call with the updated messages
         response = create_completion_response(config, messages, False)
@@ -183,7 +183,7 @@ def run_oneshot(config, prompt):
     if not response:
         sys.exit(1)
 
-    response = handle_tool_calls(config, messages, response)
+    response = handle_tool_calls(config, messages, response, False)
 
     output = response.choices[0].message.content
     print_fancy(output, config.do_markdown, config.do_latex, config.do_color, config.color)
@@ -521,7 +521,7 @@ def run_chat(config):
         if not response:
             continue
 
-        response = handle_tool_calls(config, messages, response)
+        response = handle_tool_calls(config, messages, response, True)
 
         output = response.choices[0].message.content
         messages.append({"role": "assistant", "content": output})
