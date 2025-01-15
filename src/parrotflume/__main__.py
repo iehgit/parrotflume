@@ -219,6 +219,9 @@ def run_transform(config, prompt, file_paths):
         response = create_completion_response(config, messages)
         if not response:
             sys.exit(1)
+
+        response = handle_tool_calls(config, messages, response, False)
+
         output = response.choices[0].message.content
 
         # end output with newline if the input does
@@ -248,6 +251,9 @@ def run_perform(config, prompt, file_paths):
         response = create_completion_response(config, messages)
         if not response:
             sys.exit(1)
+
+        response = handle_tool_calls(config, messages, response, False)
+
         output = response.choices[0].message.content
 
         output += '\n'
