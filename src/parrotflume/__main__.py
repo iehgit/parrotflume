@@ -198,7 +198,7 @@ def run_oneshot(config, prompt):
 
     response = handle_prefix(config, messages, extend_content=True)
 
-    if not response:
+    if not (response and response.choices):
         sys.exit(1)
 
     response = handle_tool_calls(config, messages, response, False)
@@ -236,7 +236,7 @@ def run_transform(config, prompt, file_paths):
 
         response = handle_prefix(config, messages)
 
-        if not response:
+        if not (response and response.choices):
             sys.exit(1)
 
         response = handle_tool_calls(config, messages, response, False)
@@ -269,7 +269,7 @@ def run_perform(config, prompt, file_paths):
 
         response = handle_prefix(config, messages)
 
-        if not response:
+        if not (response and response.choices):
             sys.exit(1)
 
         response = handle_tool_calls(config, messages, response, False)
@@ -546,6 +546,11 @@ def run_chat(config):
         response = handle_prefix(config, messages, extend_content=True)
 
         if not response:
+            continue
+
+        if not response.choices:
+            if response.error:
+                print(f"[{response.error['message']}]")
             continue
 
         response = handle_tool_calls(config, messages, response, True)
