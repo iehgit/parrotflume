@@ -35,6 +35,7 @@ class Config:
     color: str = "bright_yellow"
     func: bool = True
     json: bool = False
+    prefix: str = None
 
 
 def load_config(file_path):
@@ -70,7 +71,7 @@ def truncate_tool_call_ids(messages, max_id_length=40):
     return messages
 
 
-def create_completion_response(config, messages, add_functions=True):
+def create_completion_response(config, messages, add_functions):
     # Ugly quirk for openAI o1-preview* model: Does not know system messages
     if any(config.model.startswith(prefix) for prefix in model_quirks.no_system):
         if messages[0]["role"] == "system" or messages[0]["role"] == "developer":
@@ -115,6 +116,9 @@ def create_completion_response(config, messages, add_functions=True):
         params["tools"] = tools
         params["tool_choice"] = "auto"
 
+    if config.prefix:
+        params["stop"] = ["\x60\x60\x60"]
+
     # Try to get a completion, on rate limit retry 4 times with increasing duration
     retry = 0
     while True:
@@ -127,7 +131,7 @@ def create_completion_response(config, messages, add_functions=True):
             if isinstance(e.body, dict) and e.body["type"] == "server_error" and "message" in e.body and "tools" in e.body["message"]:
                 print(f"[{config.api_provider} does not support function calling via \"tools\"]")
                 config.func = False
-                return create_completion_response(config, messages, add_functions=False)
+                return create_completion_response(config, messages, False)
             else:
                 print(f"API returned an API Error: {e}", file=sys.stderr)
             return None
@@ -166,6 +170,19 @@ def handle_tool_calls(config, messages, response, do_print):
     return response
 
 
+def handle_prefix(config, messages, extend_content=False):
+    if config.prefix:
+        messages.append({"role": "assistant", "content": f"\x60\x60\x60{config.prefix}\n", "prefix": True})
+        response = create_completion_response(config, messages, False)
+        if extend_content and response:
+            response.choices[0].message.content = f"\x60\x60\x60{config.prefix}\n{response.choices[0].message.content}\x60\x60\x60"
+        messages[-1].pop("prefix")  # deepseek allows only the very last message to have prefix set, so delete it from message history
+    else:
+        response = create_completion_response(config, messages, True)
+
+    return response
+
+
 def run_oneshot(config, prompt):
     system_message = (
         "You are an assistant providing a direct answer based on the user's input. "
@@ -179,7 +196,8 @@ def run_oneshot(config, prompt):
         {"role": "user", "content": prompt}
     ]
 
-    response = create_completion_response(config, messages)
+    response = handle_prefix(config, messages, extend_content=True)
+
     if not response:
         sys.exit(1)
 
@@ -216,7 +234,8 @@ def run_transform(config, prompt, file_paths):
             {"role": "user", "content": file_content}
         ]
 
-        response = create_completion_response(config, messages)
+        response = handle_prefix(config, messages)
+
         if not response:
             sys.exit(1)
 
@@ -248,7 +267,8 @@ def run_perform(config, prompt, file_paths):
             {"role": "user", "content": file_content}
         ]
 
-        response = create_completion_response(config, messages)
+        response = handle_prefix(config, messages)
+
         if not response:
             sys.exit(1)
 
@@ -523,7 +543,8 @@ def run_chat(config):
 
         messages.append({"role": "user", "content": user_input})
 
-        response = create_completion_response(config, messages)
+        response = handle_prefix(config, messages, extend_content=True)
+
         if not response:
             continue
 
@@ -620,6 +641,7 @@ def main():
     parser.add_argument("-x", "--max-tokens", type=int, metavar="<max>", help=f"Set maximum number of tokens (default: {config.max_tokens}).")
     parser.add_argument("-w", "--warmth", type=float, metavar="<temperature>", help=f"Set model temperature (default: {config.temperature}).")
     parser.add_argument("-j", "--json", action="store_true", help=f"Enable JSON output mode.")
+    parser.add_argument("-i", "--prefix", metavar="<prefix>", help=argparse.SUPPRESS)  # deepseek beta chat prefix completion
 
     group_interactive = parser.add_argument_group("options for chat/oneshot mode")
     group_interactive.add_argument("--markdown", dest="markdown", action="store_true", help="Enable ANSI escape sequences for markdown.")
@@ -718,6 +740,9 @@ def main():
 
     # JSON
     config.json = args.json
+
+    # Prefix
+    config.prefix = args.prefix
 
     # Features for chat modes
     if args.markdown is not None:
