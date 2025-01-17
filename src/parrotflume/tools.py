@@ -12,7 +12,8 @@ tools = [
             "description": "Get the current (today's) date",
             "parameters": {
                 "type": "object",
-                "properties": {}
+                "properties": {},
+                "required": []
             }
         }
     },
