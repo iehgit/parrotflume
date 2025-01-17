@@ -29,3 +29,10 @@ base_url = "http://localhost:8080/v1/"
 api_key = "sk-no-key-required"  # not used, NOT allowed to be empty for llama.cpp
 model = ""  # not used, allowed to be empty for llama.cpp
 func = false  # Disable function calling, not yet supported by llama.cpp
+
+[[api_providers]]
+name = "openrouter"
+base_url = "https://openrouter.ai/api/v1/"
+api_key = "<yourapikeyhere>"
+model = "anthropic/claude-3.5-sonnet:beta"
+func = true  # Enable function calling

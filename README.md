@@ -10,7 +10,7 @@
 - **One-Shot Mode**: Provide a single prompt and receive an immediate, complete response from the LLM.
 
 ## Chat features
-- **Model switching**: Seamlessly switch between API providers and models during a conversation. Ask a second model to verify the reply of the first.
+- **Model switching**: Seamlessly switch between API providers and models during a conversation. Ask a second model to verify the reply of the first. Then ask a third who of the previous two was right.
 - **Markdown, LaTeX, and Color Support**: Enhanced output formatting with ANSI escape sequences and LaTeX to Unicode replacement.
 - **Function Calling**: Let the LLM evaluate mathematical expressions, solve equations, and more using built-in functions.
 - **Auto-Completion**: Enjoy tab-completion for API providers, models, and file paths when using commands in the interactive chat interface.
@@ -70,6 +70,13 @@ base_url = "http://localhost:8080/v1/"
 api_key = "sk-no-key-required"  # not used, NOT allowed to be empty for llama.cpp
 model = ""   # not used, allowed to be empty for llama.cpp
 func = false  # Disable function calling, not yet supported by llama.cpp
+
+[[api_providers]]
+name = "openrouter"
+base_url = "https://openrouter.ai/api/v1/"
+api_key = "<yourapikeyhere>"
+model = "anthropic/claude-3.5-sonnet:beta"
+func = true  # Enable function calling
 ```
 
 ## Usage
@@ -149,6 +156,9 @@ These apply to chat and one-shot modes.
 This provides the LLM with some mathematical tools, the current date, and a way to sift through text using regex.  
 The function calling feature requires support from both the API provider and the LLM.
 
+#### JSON Parameter
+
+- **`--json`**: Enforces JSON output
 
 ### Environment Variable
 
