@@ -222,7 +222,11 @@ def handle_count_chars(messages, arguments):
 
 
 def handle_tool_call(messages, tool_call, do_print=False):
-    args = json.loads(tool_call.function.arguments)
+    if tool_call.function.arguments:
+        args = json.loads(tool_call.function.arguments)
+    else:
+        # Claude via openrouter sends an empty string as argument for argument-less tool call
+        args = None
     if do_print:
         print(f"[{tool_call.function.name} called]")
 

@@ -165,7 +165,8 @@ def handle_tool_calls(config, messages, response, do_print):
             handle_tool_call(messages, tool_call, do_print)
 
         # Make a follow-up API call with the updated messages
-        response = create_completion_response(config, messages, False)
+        allow_looped_calls = not any(config.model.startswith(prefix) for prefix in model_quirks.no_function_call_looping)
+        response = create_completion_response(config, messages, allow_looped_calls)
 
     return response
 
