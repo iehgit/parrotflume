@@ -1,4 +1,5 @@
 import argparse
+import base64
 import json
 import os
 # noinspection PyUnresolvedReferences
@@ -184,6 +185,67 @@ def handle_prefix(config, messages, extend_content=False):
     return response
 
 
+def run_ocr(config, file_paths):
+    system_message = (
+        "You are an automated OCR machine without user interaction. "
+        "You do nothing but OCR. "
+        "You output nothing but the recognized text. "
+        "If the image does not contain text, reply with 'None'. "
+        "Do not put the recognized text in a markdown block."
+    )
+
+    def ocr(file_content):
+        if len(file_content) < 12:
+            print(f"Error: File too short (length: {len(file_content)})", file=sys.stderr)
+            return
+
+        header = file_content[:12]
+        if header.startswith(b'\x89PNG\r\n\x1a\n'):
+            mime_image = 'image/png'
+        elif header.startswith(b'\xff\xd8\xff'):
+            mime_image = 'image/jpeg'
+        elif header.startswith(b'RIFF') and header[8:12] == b'WEBP':
+            mime_image = 'image/webp'
+        elif header.startswith(b'GIF87a') or header.startswith(b'GIF89a'):
+            mime_image = 'image/gif'
+        else:
+            print("Error: Unknown file format", file=sys.stderr)
+            return
+
+        base64_image = base64.b64encode(file_content).decode()
+
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content":
+                [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{mime_image};base64,{base64_image}",
+                            "detail": "auto"
+                        }
+                    }
+                ]
+            }
+        ]
+
+        response = create_completion_response(config, messages, False)
+
+        if not (response and response.choices):
+            sys.exit(1)
+
+        output = response.choices[0].message.content
+        if output != "None":
+            output += '\n'
+            sys.stdout.write(output)
+
+    if not file_paths:
+        ocr(sys.stdin.read())
+    else:
+        for file in file_paths:
+            ocr(get_file_content(file, True))
+
+
 def run_oneshot(config, prompt):
     system_message = (
         "You are an assistant providing a direct answer based on the user's input. "
@@ -208,11 +270,11 @@ def run_oneshot(config, prompt):
     print_fancy(output, config.do_markdown, config.do_latex, config.do_color, config.color)
 
 
-def get_file_content(file_name):
+def get_file_content(file_name, binary=False):
     if not os.path.isfile(file_name):
         print(f"Error: {file_name} does not exist.", file=sys.stderr)
         sys.exit(1)
-    with open(file_name, "r") as f:
+    with open(file_name, f"r{'b' if binary else ''}") as f:
         try:
             return f.read()
         except OSError as e:
@@ -639,6 +701,7 @@ def main():
     mode_group.add_argument("-t", "--transform", metavar="<prompt>", help="Transform data with the given prompt.")
     mode_group.add_argument("-p", "--perform", metavar="<prompt>", help="Perform task on data with the given prompt.")
     mode_group.add_argument("-l", "--list", action="store_true", help="List available models.")
+    mode_group.add_argument("-r", "--ocr", action="store_true", help=argparse.SUPPRESS)
 
     parser.add_argument("-a", "--api-provider", metavar="<provider>", help="Set API provider (default: first in config file).")
     parser.add_argument("-b", "--base-url", metavar="<url>", help="Set API base URL.")
@@ -778,6 +841,8 @@ def main():
         run_transform(config, args.transform, args.filenames)
     elif args.perform:
         run_perform(config, args.perform, args.filenames)
+    elif args.ocr:
+        run_ocr(config, args.filenames)
     else:  # args.chat
         run_chat(config)
 
