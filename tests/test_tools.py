@@ -156,6 +156,26 @@ class TestHandleToolCall(unittest.TestCase):
         self.assertEqual(self.messages[0]["content"], "10")
         self.assertEqual(self.messages[0]["tool_call_id"], "tool_call_123")
 
+    def test_handle_count_substring_occurrences(self):
+        # Test handling a count_substring_occurrences tool call
+        tool_call = type('ToolCall', (), {
+            'id': 'tool_call_123',
+            'function': type('Function', (), {
+                'name': 'count_substring_occurrences',
+                'arguments': json.dumps({"string": "strawberry", "substring": "r"})
+            })
+        })
+
+        # Call the function
+        handle_tool_call(self.messages, tool_call)
+
+        # Verify the result
+        self.assertEqual(len(self.messages), 1)
+        self.assertEqual(self.messages[0]["role"], "tool")
+        self.assertEqual(self.messages[0]["name"], "count_substring_occurrences")
+        self.assertEqual(self.messages[0]["content"], "3")
+        self.assertEqual(self.messages[0]["tool_call_id"], "tool_call_123")
+
 
 if __name__ == "__main__":
     unittest.main()

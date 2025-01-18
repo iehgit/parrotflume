@@ -139,6 +139,27 @@ tools = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "count_substring_occurrences",
+            "description": "Counts the number of occurrences of a substring in a string",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "string": {
+                        "type": "string",
+                        "description": "string to search within"
+                    },
+                    "substring": {
+                        "type": "string",
+                        "description": "substring to count occurrences of"
+                    }
+                },
+                "required": ["string", "substring"]
+            }
+        }
+    },
 ]
 
 
@@ -219,6 +240,17 @@ def handle_count_chars(messages, arguments):
         messages.append({"role": "tool", "name": "count_chars", "content": str(result)})
     except Exception as e:
         messages.append({"role": "tool", "name": "count_chars", "content": str(e)})
+
+
+def handle_count_substring_occurrences(messages, arguments):
+    try:
+        text = arguments["string"]
+        substring = arguments["substring"]
+
+        result = text.count(substring)
+        messages.append({"role": "tool", "name": "count_substring_occurrences", "content": str(result)})
+    except Exception as e:
+        messages.append({"role": "tool", "name": "count_substring_occurrences", "content": str(e)})
 
 
 def handle_tool_call(messages, tool_call, do_print=False):
@@ -358,5 +390,24 @@ def handle_tool_call(messages, tool_call, do_print=False):
                 "role": "tool",
                 "tool_call_id": tool_call.id,
                 "name": "count_chars",
+                "content": str(e)
+            })
+    elif tool_call.function.name == "count_substring_occurrences":
+        try:
+            text = args["string"]
+            substring = args["substring"]
+
+            result = text.count(substring)
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "name": "count_substring_occurrences",
+                "content": str(result)
+            })
+        except Exception as e:
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "name": "count_substring_occurrences",
                 "content": str(e)
             })
