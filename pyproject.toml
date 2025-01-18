@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "parrotflume"
 dynamic = ["version"]
-description = "parrotflume: Process data from a pipe or file with an OpenAI-compatible API, or chat with it."
+description = "parrotflume: Process data from a pipe or file with an OpenAI-compatible API, or chat with it on a CLI."
 authors = [
     { name = "Sebastian Dalfuß", email = "py@sedf.de" },
 ]
