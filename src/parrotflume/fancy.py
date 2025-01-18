@@ -69,6 +69,8 @@ def print_fancy(text, do_markdown, do_latex, do_color, color):
         do_latex = re.search(r'\\[a-zA-Z]', text)  # Probably no latex in here, otherwise
     result = []
     in_code_block = False
+    in_latex_block = False
+    latex_block = []
 
     for line in text.splitlines():
         # Handle code blocks
@@ -83,6 +85,24 @@ def print_fancy(text, do_markdown, do_latex, do_color, color):
             continue
 
         if not in_code_block:
+            # Handle LaTeX matrices
+            if do_latex:
+                if line.strip() == "\\[":
+                    in_latex_block = True
+                    latex_block = []
+                    continue
+                elif line.strip() == "\\]":
+                    in_latex_block = False
+                    latex_text = "\n".join(latex_block)
+                    latex_text = custom_latex_to_text(latex_text)
+                    latex_text = latex_text.replace(";", "\n ")
+                    result.append(latex_text + "\n")
+                    continue
+
+                if in_latex_block:
+                    latex_block.append(line)
+                    continue
+
             if do_markdown:
                 # Render header h3
                 if line.startswith("### "):
