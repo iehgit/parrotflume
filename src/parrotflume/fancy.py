@@ -65,6 +65,8 @@ def print_fancy(text, do_markdown, do_latex, do_color, color):
     Processes the given text with Markdown, LaTeX, and color formatting.
     Supports h3, h4, italic (*), bold (**), code blocks, inline code, and LaTeX to Unicode conversion.
     """
+    if do_latex:
+        do_latex = re.search(r'\\[a-zA-Z]', text)  # Probably no latex in here, otherwise
     result = []
     in_code_block = False
 
@@ -132,4 +134,7 @@ def custom_latex_to_text(input_latex):
     # initialize the converter to text with custom latex_context
     l2t_obj = latex2text.LatexNodes2Text(latex_context=l2t_context_db, keep_comments=True)
     # convert to text
-    return l2t_obj.nodelist_to_text(nodelist)
+    try:
+        return l2t_obj.nodelist_to_text(nodelist)
+    except ValueError:
+        return input_latex
