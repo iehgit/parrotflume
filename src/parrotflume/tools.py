@@ -1,8 +1,7 @@
 import json
 import re
 from datetime import datetime
-from sympy import simplify, solve, sympify, Eq, integrate, diff
-from sympy.parsing.sympy_parser import parse_expr
+
 
 tools = [
     {
@@ -163,21 +162,36 @@ tools = [
 ]
 
 
-def handle_get_current_date(messages):
+def handle_get_current_date(messages, tool_call_id):
     result = datetime.now().strftime("%Y-%m-%d")
-    messages.append({"role": "tool", "name": "get_current_date", "content": result})
+    messages.append({
+        "role": "tool",
+        "tool_call_id": tool_call_id,
+        "name": "get_current_date",
+        "content": result
+    })
 
 
-def handle_sympy_simplify(messages, arguments):
+def handle_sympy_simplify(messages, arguments, tool_call_id):
+    from sympy.parsing.sympy_parser import parse_expr
+    from sympy import simplify
     try:
         expr = parse_expr(arguments["expression"])
-        simplified_expr = simplify(expr)
-        messages.append({"role": "tool", "name": "sympy_simplify", "content": str(simplified_expr)})
+        content = str(simplify(expr))
     except Exception as e:
-        messages.append({"role": "tool", "name": "sympy_simplify", "content": str(e)})
+        content = str(e)
+
+    messages.append({
+        "role": "tool",
+        "tool_call_id": tool_call_id,
+        "name": "sympy_simplify",
+        "content": content
+    })
 
 
-def handle_sympy_solve(messages, arguments):
+def handle_sympy_solve(messages, arguments, tool_call_id):
+    from sympy.parsing.sympy_parser import parse_expr
+    from sympy import solve, sympify, Eq
     try:
         equation = arguments["expression"]
         variable = arguments["variable"]
@@ -191,24 +205,42 @@ def handle_sympy_solve(messages, arguments):
             eq = parse_expr(equation)
 
         solution = solve(eq, sympify(variable))
-        messages.append({"role": "tool", "name": "sympy_solve", "content": str(solution)})
+        content = str(solution)
     except Exception as e:
-        messages.append({"role": "tool", "name": "sympy_solve", "content": str(e)})
+        content = str(e)
+
+    messages.append({
+        "role": "tool",
+        "tool_call_id": tool_call_id,
+        "name": "sympy_solve",
+        "content": content
+    })
 
 
-def handle_sympy_integrate(messages, arguments):
+def handle_sympy_integrate(messages, arguments, tool_call_id):
+    from sympy.parsing.sympy_parser import parse_expr
+    from sympy import sympify, integrate
     try:
         expression = arguments["expression"]
         variable = sympify(arguments["variable"])
 
         expr = parse_expr(expression)
         result = integrate(expr, variable)
-        messages.append({"role": "tool", "name": "sympy_integrate", "content": str(result)})
+        content = str(result)
     except Exception as e:
-        messages.append({"role": "tool", "name": "sympy_integrate", "content": str(e)})
+        content = str(e)
+
+    messages.append({
+        "role": "tool",
+        "tool_call_id": tool_call_id,
+        "name": "sympy_integrate",
+        "content": content
+    })
 
 
-def handle_sympy_differentiate(messages, arguments):
+def handle_sympy_differentiate(messages, arguments, tool_call_id):
+    from sympy.parsing.sympy_parser import parse_expr
+    from sympy import sympify, diff
     try:
         expression = arguments["expression"]
         variable = sympify(arguments["variable"])
@@ -216,41 +248,65 @@ def handle_sympy_differentiate(messages, arguments):
 
         expr = parse_expr(expression)
         result = diff(expr, variable, order)
-        messages.append({"role": "tool", "name": "sympy_differentiate", "content": str(result)})
+        content = str(result)
     except Exception as e:
-        messages.append({"role": "tool", "name": "sympy_differentiate", "content": str(e)})
+        content = str(e)
+
+    messages.append({
+        "role": "tool",
+        "tool_call_id": tool_call_id,
+        "name": "sympy_differentiate",
+        "content": content
+    })
 
 
-def handle_regex_match(messages, arguments):
+def handle_regex_match(messages, arguments, tool_call_id):
     try:
         pattern = arguments["pattern"]
         text = arguments["text"]
 
         result = re.findall(pattern, text)
-        messages.append({"role": "tool", "name": "regex_match", "content": str(result)})
+        content = str(result)
     except Exception as e:
-        messages.append({"role": "tool", "name": "regex_match", "content": str(e)})
+        content = str(e)
+
+    messages.append({
+        "role": "tool",
+        "tool_call_id": tool_call_id,
+        "name": "regex_match",
+        "content": content
+    })
 
 
-def handle_count_chars(messages, arguments):
+def handle_count_chars(messages, arguments, tool_call_id):
     try:
         text = arguments["text"]
-
-        result = len(text)
-        messages.append({"role": "tool", "name": "count_chars", "content": str(result)})
+        content = str(len(text))
     except Exception as e:
-        messages.append({"role": "tool", "name": "count_chars", "content": str(e)})
+        content = str(e)
+
+    messages.append({
+        "role": "tool",
+        "tool_call_id": tool_call_id,
+        "name": "count_chars",
+        "content": content
+    })
 
 
-def handle_count_substring_occurrences(messages, arguments):
+def handle_count_substring_occurrences(messages, arguments, tool_call_id):
     try:
         text = arguments["string"]
         substring = arguments["substring"]
-
-        result = text.count(substring)
-        messages.append({"role": "tool", "name": "count_substring_occurrences", "content": str(result)})
+        content = str(text.count(substring))
     except Exception as e:
-        messages.append({"role": "tool", "name": "count_substring_occurrences", "content": str(e)})
+        content = str(e)
+
+    messages.append({
+        "role": "tool",
+        "tool_call_id": tool_call_id,
+        "name": "count_substring_occurrences",
+        "content": content
+    })
 
 
 def handle_tool_call(messages, tool_call, do_print=False):
@@ -263,151 +319,18 @@ def handle_tool_call(messages, tool_call, do_print=False):
         print(f"[{tool_call.function.name} called]")
 
     if tool_call.function.name == "get_current_date":
-        result = datetime.now().strftime("%Y-%m-%d")
-        messages.append({
-            "role": "tool",
-            "tool_call_id": tool_call.id,
-            "name": "get_current_date",
-            "content": result
-        })
+        handle_get_current_date(messages, tool_call.id)
     elif tool_call.function.name == "sympy_simplify":
-        try:
-            expr = parse_expr(args["expression"])
-            simplified_expr = simplify(expr)
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": "sympy_simplify",
-                "content": str(simplified_expr)
-            })
-        except Exception as e:
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": "sympy_simplify",
-                "content": str(e)
-            })
+        handle_sympy_simplify(messages, args, tool_call.id)
     elif tool_call.function.name == "sympy_solve":
-        try:
-            equation = args["expression"]
-            variable = args["variable"]
-
-            if "=" in equation:
-                left, right = equation.split("=", 1)
-                left_expr = parse_expr(left.strip())
-                right_expr = parse_expr(right.strip())
-                eq = Eq(left_expr, right_expr)
-            else:
-                eq = parse_expr(equation)
-
-            solution = solve(eq, sympify(variable))
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": "sympy_solve",
-                "content": str(solution)
-            })
-        except Exception as e:
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": "sympy_solve",
-                "content": str(e)
-            })
+        handle_sympy_solve(messages, args, tool_call.id)
     elif tool_call.function.name == "sympy_integrate":
-        try:
-            expression = args["expression"]
-            variable = sympify(args["variable"])
-
-            expr = parse_expr(expression)
-            result = integrate(expr, variable)
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": "sympy_integrate",
-                "content": str(result)
-            })
-        except Exception as e:
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": "sympy_integrate",
-                "content": str(e)
-            })
+        handle_sympy_integrate(messages, args, tool_call.id)
     elif tool_call.function.name == "sympy_differentiate":
-        try:
-            expression = args["expression"]
-            variable = sympify(args["variable"])
-            order = args.get("order", 1)
-
-            expr = parse_expr(expression)
-            result = diff(expr, variable, order)
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": "sympy_differentiate",
-                "content": str(result)
-            })
-        except Exception as e:
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": "sympy_differentiate",
-                "content": str(e)
-            })
+        handle_sympy_differentiate(messages, args, tool_call.id)
     elif tool_call.function.name == "regex_match":
-        try:
-            pattern = args["pattern"]
-            text = args["text"]
-
-            result = re.findall(pattern, text)
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": "regex_match",
-                "content": str(result)
-            })
-        except Exception as e:
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": "regex_match",
-                "content": str(e)
-            })
+        handle_regex_match(messages, args, tool_call.id)
     elif tool_call.function.name == "count_chars":
-        try:
-            text = args["text"]
-
-            result = len(text)
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": "count_chars",
-                "content": str(result)
-            })
-        except Exception as e:
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": "count_chars",
-                "content": str(e)
-            })
+        handle_count_chars(messages, args, tool_call.id)
     elif tool_call.function.name == "count_substring_occurrences":
-        try:
-            text = args["string"]
-            substring = args["substring"]
-
-            result = text.count(substring)
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": "count_substring_occurrences",
-                "content": str(result)
-            })
-        except Exception as e:
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": "count_substring_occurrences",
-                "content": str(e)
-            })
+        handle_count_substring_occurrences(messages, args, tool_call.id)
