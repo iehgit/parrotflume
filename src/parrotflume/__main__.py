@@ -10,33 +10,18 @@ import tomllib
 import openai
 from openai.types.chat import ChatCompletionMessageToolCall
 from appdirs import user_config_dir
-from dataclasses import dataclass
 
 from parrotflume.tools import tools, handle_tool_call
 from parrotflume.fancy import print_fancy, print_reset
 from parrotflume.auto_completer import AutoCompleter
+from parrotflume.config import Config
 from parrotflume import fallbacks
 from parrotflume import model_quirks
+from parrotflume import __version__
 
 app_name = "parrotflume"
 config_dir = user_config_dir(appname=app_name)
 config_path = os.path.join(config_dir, f"{app_name}.config.toml")
-
-@dataclass
-class Config:
-    api_provider: str = None
-    base_url: str = None
-    api_key: str = None
-    model: str = None
-    temperature: float = 0.0
-    max_tokens: int = 4096
-    do_markdown: bool = True
-    do_latex: bool = True
-    do_color: bool = False
-    color: str = "bright_yellow"
-    func: bool = True
-    json: bool = False
-    prefix: str = None
 
 
 def load_config(file_path):
@@ -702,6 +687,7 @@ def main():
     mode_group.add_argument("-p", "--perform", metavar="<prompt>", help="Perform task on data with the given prompt.")
     mode_group.add_argument("-l", "--list", action="store_true", help="List available models.")
     mode_group.add_argument("-r", "--ocr", action="store_true", help=argparse.SUPPRESS)
+    mode_group.add_argument("-v", "--version", action="store_true", help="Print version and exit immediately.")
 
     parser.add_argument("-a", "--api-provider", metavar="<provider>", help="Set API provider (default: first in config file).")
     parser.add_argument("-b", "--base-url", metavar="<url>", help="Set API base URL.")
@@ -727,6 +713,10 @@ def main():
     group_non_interactive.add_argument("filenames", nargs="*", help="File(s) to read from (default: stdin)")
 
     args = parser.parse_args()
+
+    if args.version:
+        print(__version__)
+        sys.exit(0)
 
     env_api_key = os.getenv("OPENAI_API_KEY")
     env_base_url = os.getenv("OPENAI_BASE_URL")
