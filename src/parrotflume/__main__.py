@@ -84,7 +84,8 @@ def create_completion_response(config, messages, add_functions):
         "messages": messages,
     }
 
-    if config.json and messages[-1]["role"] == "user":
+    # Ugly quirk for DeepSeek deepseek-reasoner model: Does not support json response format
+    if config.json and messages[-1]["role"] == "user" and not any(config.model.startswith(prefix) for prefix in model_quirks.no_json):
         params["response_format"] = { "type": "json_object" }
 
     # Ugly quirk for openAI o* models: New parameter for max_tokens
