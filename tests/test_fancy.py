@@ -1,7 +1,7 @@
 import unittest
 from io import StringIO
 import contextlib
-from src.parrotflume.fancy import print_fancy, print_reset
+from parrotflume.fancy import print_fancy, print_reset
 
 class TestPrintFancy(unittest.TestCase):
     @staticmethod

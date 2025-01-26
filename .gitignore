@@ -1,3 +1,12 @@
 .idea/
+.pybuild/
+.debhelper/
+/debian/parrotflume/
 dist/
 NOTES
+
+/debian/debhelper-build-stamp
+/debian/parrotflume.postinst.debhelper
+/debian/parrotflume.prerm.debhelper
+/debian/parrotflume.substvars
+/debian/files

@@ -1,0 +1,17 @@
+Source: parrotflume
+Section: python
+Priority: optional
+Maintainer: Sebastian Dalfuß <py@sedf.de>
+Build-Depends: debhelper (>= 9), python3, dh-python, python3-hatchling, pybuild-plugin-pyproject
+Standards-Version: 3.9.6
+Homepage: https://github.com/iehgit/parrotflume
+
+Package: parrotflume
+Architecture: all
+Depends: ${python3:Depends}, ${misc:Depends},
+         python3-openai (>= 1.59.6),
+         python3-sympy (>= 1.12.1),
+         python3-pylatexenc (>= 2.10),
+         python3-appdirs (>= 1.4.4)
+Description: Process data from a pipe or file with an OpenAI-compatible API, or chat with it on a CLI.
+ parrotflume is a utility for processing data using an OpenAI-compatible API or interacting with it via a command-line interface.

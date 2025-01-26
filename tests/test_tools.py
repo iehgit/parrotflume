@@ -1,6 +1,6 @@
 import unittest
 import json
-from src.parrotflume.tools import handle_tool_call
+from parrotflume.tools import handle_tool_call
 
 
 class TestHandleToolCall(unittest.TestCase):
