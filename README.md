@@ -18,12 +18,26 @@
 ![screenshot](screenshot.png)
 
 ## Installation
+### From Git
 To install ParrotFlume, clone the repository and install the package alongside its required dependencies:
 
 ```bash
 git clone https://github.com/iehgit/parrotflume.git
 cd parrotflume
 pip install .
+```
+### From PyPi
+To install ParrotFlume directly from [PyPi](https://pypi.org/project/parrotflume/), alongside its dependencies: 
+```bash
+pip install parrotflume
+```
+### Building a .deb
+It is also possible to build and install it as a debian package:
+```bash
+git clone https://github.com/iehgit/parrotflume.git
+cd parrotflume
+dpkg-buildpackage -us -uc
+# dpkg -i ../parrotflume_*.*.*_all.deb
 ```
 
 ## Configuration
