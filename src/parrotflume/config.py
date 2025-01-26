@@ -15,4 +15,5 @@ class Config:
     color: str = "bright_yellow"
     func: bool = True
     json: bool = False
+    unthink: bool = False
     prefix: str = None

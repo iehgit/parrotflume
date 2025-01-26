@@ -2,6 +2,7 @@ import argparse
 import base64
 import json
 import os
+import re
 # noinspection PyUnresolvedReferences
 import readline  # used by input()
 import sys
@@ -231,6 +232,8 @@ def run_ocr(config, file_paths):
         for file in file_paths:
             ocr(get_file_content(file, True))
 
+def unthink(text):
+    return re.sub(r'<think>.*?</think>\n\n', '', text, count=1, flags=re.DOTALL)
 
 def run_oneshot(config, prompt):
     system_message = (
@@ -253,6 +256,9 @@ def run_oneshot(config, prompt):
     response = handle_tool_calls(config, messages, response, False)
 
     output = response.choices[0].message.content
+    if config.unthink:
+        output = unthink(output)
+
     print_fancy(output, config.do_markdown, config.do_latex, config.do_color, config.color)
 
 
@@ -291,6 +297,8 @@ def run_transform(config, prompt, file_paths):
         response = handle_tool_calls(config, messages, response, False)
 
         output = response.choices[0].message.content
+        if config.unthink:
+            output = unthink(output)
 
         # end output with newline if the input does
         if file_content.endswith('\n'):
@@ -324,6 +332,8 @@ def run_perform(config, prompt, file_paths):
         response = handle_tool_calls(config, messages, response, False)
 
         output = response.choices[0].message.content
+        if config.unthink:
+            output = unthink(output)
 
         output += '\n'
 
@@ -605,6 +615,9 @@ def run_chat(config):
         response = handle_tool_calls(config, messages, response, True)
 
         output = response.choices[0].message.content
+        if config.unthink:
+            output = unthink(output)
+
         messages.append({"role": "assistant", "content": output})
         print_fancy(output, config.do_markdown, config.do_latex, config.do_color, config.color)
 
@@ -696,7 +709,8 @@ def main():
     parser.add_argument("-m", "--model", metavar="<model>", help="Set model.")
     parser.add_argument("-x", "--max-tokens", type=int, metavar="<max>", help=f"Set maximum number of tokens (default: {config.max_tokens}).")
     parser.add_argument("-w", "--warmth", type=float, metavar="<temperature>", help=f"Set model temperature (default: {config.temperature}).")
-    parser.add_argument("-j", "--json", action="store_true", help=f"Enable JSON output mode.")
+    parser.add_argument("-j", "--json", action="store_true", help="Enable JSON output mode.")
+    parser.add_argument("-u", "--unthink", action="store_true", help="Remove chain of thought, marked by <think></think> tags, from output.")
     parser.add_argument("-i", "--prefix", metavar="<prefix>", help=argparse.SUPPRESS)  # deepseek beta chat prefix completion
 
     group_interactive = parser.add_argument_group("options for chat/oneshot mode")
@@ -800,6 +814,9 @@ def main():
 
     # JSON
     config.json = args.json
+
+    # <think>
+    config.unthink = args.unthink
 
     # Prefix
     config.prefix = args.prefix
