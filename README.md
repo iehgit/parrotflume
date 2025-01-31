@@ -83,7 +83,7 @@ name = "llama.cpp"
 base_url = "http://localhost:8080/v1/"
 api_key = "sk-no-key-required"  # not used, NOT allowed to be empty for llama.cpp
 model = ""   # not used, allowed to be empty for llama.cpp
-func = false  # Disable function calling, not yet supported by llama.cpp
+func = true  # Enable function calling
 
 [[api_providers]]
 name = "openrouter"
@@ -169,6 +169,8 @@ These apply to chat and one-shot modes.
 
 This provides the LLM with some mathematical tools, the current date, and a way to sift through text using regex.  
 The function calling feature requires support from both the API provider and the LLM.
+
+Hint: Up-to-date llama.cpp supports function calling if it gets invoked with `--jinja`.
 
 #### JSON Parameter
 
